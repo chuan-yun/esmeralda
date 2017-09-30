@@ -1,0 +1,97 @@
+[application]
+# Application Environment
+# enum: development, testing, staging, production
+env = "production"
+# Enable Runtime Profiling
+# enum: false, true
+profiling = false
+
+
+[log]
+# Log Level
+# enum: debug, info, warn, error, fatal, panic
+level = "info"
+
+
+[mysql]
+# Data Source Name
+# @see https://github.com/go-sql-driver/mysql#dsn-data-source-name
+# string:
+#   admin:passwd@tcp(10.10.10.1:3306)/dbname?charset=utf8mb4&collation=utf8mb4_unicode_ci
+#   admin:passwd@unix(/tmp/mysql.sock)/dbname?charset=utf8mb4&collation=utf8mb4_unicode_ci
+dsn = "username:password@tcp(10.10.10.1:3306)/name?charset=utf8mb4&collation=utf8mb4_unicode_ci"
+
+
+[kafka]
+# Kafka Topics
+# string[]: support multiple topics
+topics = ["chuanyun"]
+
+[kafka.consumer]
+# Kafka Consumer Group ID
+# string: kafka consumer group id.
+group = "group name"
+# Kafka Consumer Message Buffer Size
+# int: 256(default)
+buffer = 10
+# Kafka Consumer Offset
+# enum: oldest, newest
+offset = "oldest"
+
+[kafka.zookeeper]
+# Kafka Zookeeper Servers
+# string[]: ["192.168.0.3:2181", "192.168.0.4:2181"]
+servers = ["192.168.0.3:2181", "192.168.0.4:2181"]
+# Kafka Zookeeper Borker Path
+# string: "/"(default)
+root = "/"
+
+
+[module]
+# Enable Module Feature
+# boolean: true/false
+enable = true
+# Module Divide Mode
+# enum: normal, simple, complex, custom
+mode = "normal"
+
+[module.threshold]
+# Module API Number Threshold
+# int.
+api = 1
+# Module Server Number Threshold
+# int.
+server = 1
+# Module Tarot Interval
+# int: unit(hours)
+interval = 24
+
+
+[gateway]
+# Enable API Gateway Translate Feature
+# boolean: true/false
+enable = false
+# Gateway translate Service URL
+# string
+url = "http://localhost/api/api/search"
+
+
+[elasticsearch]
+# Elasticsearch Hosts
+# string[]
+hosts = ["http://127.0.0.1:9200", "http://10.10.10.2:9200"]
+# Elasticsearch BasicAuth Username
+# string
+username = "username"
+# Elasticsearch BasicAuth Password
+# string
+password = "password"
+# Elasticsearch Client Bulk Size
+# int: 2000(default), 0 < bulk < 5000
+bulk = 2000
+
+[exporter]
+# Metric Exporter Port
+# int: 10301(default)
+port = 10301
+
