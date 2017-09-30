@@ -1,25 +1,25 @@
 #!/bin/bash
 #
-# /etc/rc.d/init.d/quasimodo
+# /etc/rc.d/init.d/esmeralda
 #
-# chuanyun.io quasimodo
+# chuanyun.io esmeralda
 #
 #  chkconfig: 2345 20 80 Read
-#  description: chuanyun.io quasimodo
-#  processname: quasimodo
+#  description: chuanyun.io esmeralda
+#  processname: esmeralda
 
 # Source function library.
 . /etc/rc.d/init.d/functions
 
-PROGNAME=quasimodo
+PROGNAME=esmeralda
 
-PROGHOME=/home/licunchang/gopath/src/chuanyun.io/quasimodo/target
-PROG=${PROGHOME}/bin/quasimodo
+PROGHOME=/home/licunchang/gopath/src/chuanyun.io/esmeralda/target
+PROG=${PROGHOME}/bin/esmeralda
 USER=licunchang
 LOCKFILE=$PROGHOME/$PROGNAME.pid
 
 LOG_LEVEL=info
-LOG_FILE=$PROGHOME/logs/quasimodo-$(date +'%Y%m%d').log
+LOG_FILE=$PROGHOME/logs/esmeralda-$(date +'%Y%m%d').log
 EXPORTER_PORT=10301
 
 ELASTICSEARCH_HOSTS=http://10.209.26.199:11520,http://10.209.26.171:11520,http://10.209.26.172:11520,http://10.209.26.198:11520
@@ -61,7 +61,7 @@ case "$1" in
         start
     ;;
     *)
-        echo "Usage: service collector {start|stop|restart}"
+        echo "Usage: service esmeralda {start|stop|restart}"
         exit 1
     ;;
 esac
