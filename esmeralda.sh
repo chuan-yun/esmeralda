@@ -24,7 +24,7 @@ PIDFILE=${PROGHOME}/$PROGNAME.pid
 EXPORTER_PORT=10301
 
 LOG_LEVEL=info
-LOG_FILE=$PROGHOME/logs/${PROGNAME}-$(date +'%Y%m%d').log
+LOG_FILE=$PROGHOME/${PROGNAME}-$(date +'%Y%m%d').log
 ELASTICSEARCH_HOSTS=http://10.209.26.199:11520,http://10.209.26.171:11520,http://10.209.26.172:11520,http://10.209.26.198:11520
 KAFKA_GROUP_ID=licunchang
 GATEWAY_URL=http://chuanyun.sit.ffan.biz/api/api/search
