@@ -16,10 +16,13 @@ PROGNAME=esmeralda
 PROGHOME=/home/licunchang/gopath/src/chuanyun.io/${PROGNAME}/target
 PROG=${PROGHOME}/bin/${PROGNAME}
 USER=licunchang
-LOCKFILE=$PROGHOME/$PROGNAME.pid
 
 LOG_LEVEL=info
 LOG_FILE=$PROGHOME/logs/${PROGNAME}-$(date +'%Y%m%d').log
+
+LOCKFILE=/var/lock/subsys/$PROGNAME
+pidfile=/var/run/$PROGNAME.pid
+
 EXPORTER_PORT=10301
 
 ELASTICSEARCH_HOSTS=http://10.209.26.199:11520,http://10.209.26.171:11520,http://10.209.26.172:11520,http://10.209.26.198:11520
@@ -35,31 +38,34 @@ BULK_SIZE=4000
 BUFFER_SIZE=256
 
 start() {
-    echo -n "Starting $PROGNAME: "
-    cd $PROGHOME
-    daemon --pidfile="$LOCKFILE" "$PROG -kafka.buffer=$BUFFER_SIZE -module.threshold=$MODULE_THRESHOLD -mysql.dsn='$MYSQL_DSN' -module.enable=$MODULE_ENABLE -log.level=$LOG_LEVEL -exporter.port=$EXPORTER_PORT -elasticsearch.hosts=$ELASTICSEARCH_HOSTS -kafka.group.id=$KAFKA_GROUP_ID -gateway.url=$GATEWAY_URL -kafka.topics=$KAFKA_TOPICS -zookeeper.addr=$ZOOKEEPER_ADDR -zookeeper.path=$ZOOKEEPER_PATH -elasticsearch.bulk.size=$BULK_SIZE >> $LOG_FILE 2>&1 &"
-    echo $(pidofproc $PROGNAME) >$LOCKFILE
+    echo -n $"Starting $PROGNAME: "
+
+    daemon --pidfile=${pidfile} "$PROG -kafka.buffer=$BUFFER_SIZE -module.threshold=$MODULE_THRESHOLD -mysql.dsn='$MYSQL_DSN' -module.enable=$MODULE_ENABLE -log.level=$LOG_LEVEL -exporter.port=$EXPORTER_PORT -elasticsearch.hosts=$ELASTICSEARCH_HOSTS -kafka.group.id=$KAFKA_GROUP_ID -gateway.url=$GATEWAY_URL -kafka.topics=$KAFKA_TOPICS -zookeeper.addr=$ZOOKEEPER_ADDR -zookeeper.path=$ZOOKEEPER_PATH -elasticsearch.bulk.size=$BULK_SIZE >> $LOG_FILE 2>&1 &"
+    RETVAL=$?
     echo
+    [ $RETVAL = 0 ] && touch ${LOCKFILE}
+    return $RETVAL
 }
 
 stop() {
-    echo -n "Shutting down $PROGNAME: "
-    killproc $PROGNAME
-    rm -f $LOCKFILE
+    echo -n $"Stopping ${PROGNAME}: "
+    killproc -p ${pidfile} ${PROGNAME}
+    RETVAL=$?
     echo
+    [ $RETVAL = 0 ] && rm -f ${LOCKFILE} ${pidfile}
 }
 
 case "$1" in
     start)
         start
-    ;;
+        ;;
     stop)
         stop
-    ;;
+        ;;
     restart)
         stop
         start
-    ;;
+        ;;
     *)
         echo "Usage: service ${PROGNAME} {start|stop|restart}"
         exit 1
