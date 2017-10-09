@@ -13,13 +13,13 @@
 
 PROGNAME=esmeralda
 
-PROGHOME=/home/licunchang/gopath/src/chuanyun.io/esmeralda/target
-PROG=${PROGHOME}/bin/esmeralda
+PROGHOME=/home/licunchang/gopath/src/chuanyun.io/${PROGNAME}/target
+PROG=${PROGHOME}/bin/${PROGNAME}
 USER=licunchang
 LOCKFILE=$PROGHOME/$PROGNAME.pid
 
 LOG_LEVEL=info
-LOG_FILE=$PROGHOME/logs/esmeralda-$(date +'%Y%m%d').log
+LOG_FILE=$PROGHOME/logs/${PROGNAME}-$(date +'%Y%m%d').log
 EXPORTER_PORT=10301
 
 ELASTICSEARCH_HOSTS=http://10.209.26.199:11520,http://10.209.26.171:11520,http://10.209.26.172:11520,http://10.209.26.198:11520
@@ -61,7 +61,7 @@ case "$1" in
         start
     ;;
     *)
-        echo "Usage: service esmeralda {start|stop|restart}"
+        echo "Usage: service ${PROGNAME} {start|stop|restart}"
         exit 1
     ;;
 esac

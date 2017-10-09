@@ -5,7 +5,7 @@
 #   \___/_/ /_/\__,_/\__,_/_/ /_/\__, /\__,_/_/ /_/ 
 #                               /____/              
 #   ================================================
-#   chuanyun.io quasimodo program.
+#   chuanyun.io esmeralda program.
 
 
 GO           ?= GO15VENDOREXPERIMENT=1 go
@@ -14,7 +14,7 @@ GOPATH 		 := $(firstword $(subst :, ,$(shell $(GO) env GOPATH)))
 STATICCHECK  ?= $(GOPATH)/bin/staticcheck
 pkgs          = $(shell $(GO) list ./... | grep -v /vendor/)
 
-BINARY  	  = quasimodo
+BINARY  	  = esmeralda
 DATE         ?= $(shell date +%FT%T%z)
 VERSION      ?= $(shell git describe --tags --always --dirty="-dev" --match=v* 2> /dev/null || echo v0)
 
