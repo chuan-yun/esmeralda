@@ -11,20 +11,20 @@
 # Source function library.
 . /etc/rc.d/init.d/functions
 
-PROGNAME=esmeralda
+PROGHOME=/home/licunchang/gopath/src/chuanyun.io/esmeralda/target
+PROG=${PROGHOME}/bin/esmeralda
 
-PROGHOME=/home/licunchang/gopath/src/chuanyun.io/${PROGNAME}/target
-PROG=${PROGHOME}/bin/${PROGNAME}
+PROGNAME=`/bin/basename $PROG`
+
 USER=licunchang
 
-LOG_LEVEL=info
-LOG_FILE=$PROGHOME/logs/${PROGNAME}-$(date +'%Y%m%d').log
-
-LOCKFILE=/var/lock/subsys/$PROGNAME
-pidfile=/var/run/$PROGNAME.pid
+LOCKFILE=${PROGHOME}/$PROGNAME.lock
+PIDFILE=${PROGHOME}/$PROGNAME.pid
 
 EXPORTER_PORT=10301
 
+LOG_LEVEL=info
+LOG_FILE=$PROGHOME/logs/${PROGNAME}-$(date +'%Y%m%d').log
 ELASTICSEARCH_HOSTS=http://10.209.26.199:11520,http://10.209.26.171:11520,http://10.209.26.172:11520,http://10.209.26.198:11520
 KAFKA_GROUP_ID=licunchang
 GATEWAY_URL=http://chuanyun.sit.ffan.biz/api/api/search
@@ -40,7 +40,7 @@ BUFFER_SIZE=256
 start() {
     echo -n $"Starting $PROGNAME: "
 
-    daemon --pidfile=${pidfile} "$PROG -kafka.buffer=$BUFFER_SIZE -module.threshold=$MODULE_THRESHOLD -mysql.dsn='$MYSQL_DSN' -module.enable=$MODULE_ENABLE -log.level=$LOG_LEVEL -exporter.port=$EXPORTER_PORT -elasticsearch.hosts=$ELASTICSEARCH_HOSTS -kafka.group.id=$KAFKA_GROUP_ID -gateway.url=$GATEWAY_URL -kafka.topics=$KAFKA_TOPICS -zookeeper.addr=$ZOOKEEPER_ADDR -zookeeper.path=$ZOOKEEPER_PATH -elasticsearch.bulk.size=$BULK_SIZE >> $LOG_FILE 2>&1 &"
+    daemon --pidfile=${PIDFILE} "$PROG -kafka.buffer=$BUFFER_SIZE -module.threshold=$MODULE_THRESHOLD -mysql.dsn='$MYSQL_DSN' -module.enable=$MODULE_ENABLE -log.level=$LOG_LEVEL -exporter.port=$EXPORTER_PORT -elasticsearch.hosts=$ELASTICSEARCH_HOSTS -kafka.group.id=$KAFKA_GROUP_ID -gateway.url=$GATEWAY_URL -kafka.topics=$KAFKA_TOPICS -zookeeper.addr=$ZOOKEEPER_ADDR -zookeeper.path=$ZOOKEEPER_PATH -elasticsearch.bulk.size=$BULK_SIZE >> $LOG_FILE 2>&1 &"
     RETVAL=$?
     echo
     [ $RETVAL = 0 ] && touch ${LOCKFILE}
@@ -49,10 +49,10 @@ start() {
 
 stop() {
     echo -n $"Stopping ${PROGNAME}: "
-    killproc -p ${pidfile} ${PROGNAME}
+    killproc -p ${PIDFILE} ${PROGNAME}
     RETVAL=$?
     echo
-    [ $RETVAL = 0 ] && rm -f ${LOCKFILE} ${pidfile}
+    [ $RETVAL = 0 ] && rm -f ${LOCKFILE} ${PIDFILE}
 }
 
 case "$1" in
