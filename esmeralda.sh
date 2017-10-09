@@ -67,7 +67,7 @@ case "$1" in
         start
         ;;
     *)
-        echo "Usage: service ${PROGNAME} {start|stop|restart}"
-        exit 1
-    ;;
+        echo $"Usage: ${PROGNAME} {start|stop|restart}"
+        exit 2
+        ;;
 esac
