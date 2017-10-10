@@ -44,5 +44,5 @@ func config() {
 	viper.OnConfigChange(func(e fsnotify.Event) {
 		fmt.Println("Config file changed:", e.Name)
 	})
-	logrus.Info(viper.AllSettings)
+	logrus.Info(viper.AllSettings())
 }
