@@ -12,7 +12,10 @@ import (
 func main() {
 	log()
 	config()
+
 	logrus.Info("main")
+
+	logrus.Info(viper.Get("elasticsearch"))
 }
 
 func log() {
