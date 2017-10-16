@@ -5,46 +5,51 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"runtime"
 
 	"github.com/fsnotify/fsnotify"
 	"github.com/sirupsen/logrus"
-	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 )
 
+var (
+	version = flag.Bool("version", false, "output version information and exit")
+	help    = flag.Bool("help", false, "output help information and exit")
+	config  = flag.String("config", "/etc/chuanyun/esmeralda.toml", "config file path")
+
+	GitTag    = "2000.01.01.release"
+	BuildTime = "2000-01-01T00:00:00+0800"
+)
+
+func PrintVersionInfo() {
+	fmt.Println("esmeralda")
+	fmt.Println("version: " + GitTag + ", build: " + BuildTime)
+	fmt.Println("Copyright (c) 2017, chuanyun.io. All rights reserved.")
+}
+
 func main() {
 
-	// type Configuration struct {
-	// 	Clusters    []Cluster `json:"clusters"`
-	// 	MinReplicas int       `json:"min_replicas"`
-	// 	MaxReplicas int       `json:"max_replicas"`
-	// }
-
-	// logrus.Info(viper.Get("elasticsearch"))
-
-	config()
-	log()
-
-	// flag.StringVar(, "config.file", "", "config file path")
-
-	var versionCmd = &cobra.Command{
-		Use:   "version",
-		Short: "Print the version number of Hugo",
-		Long:  `All software has versions. This is Hugo's`,
-		Run: func(cmd *cobra.Command, args []string) {
-			fmt.Println("Hugo Static Site Generator v0.9 -- HEAD")
-		},
-	}
+	runtime.GOMAXPROCS(runtime.NumCPU())
 
 	flag.Parse()
 
-	fmt.Println(os.Args[0])
+	if *version {
+		PrintVersionInfo()
+		os.Exit(0)
+	}
 
-	dir := filepath.Dir(os.Args[0])
+	if *help {
+		flag.Usage()
+		os.Exit(0)
+	}
+
+	fmt.Println(*config)
+
+	dir := filepath.Dir(*config)
 	fmt.Print("Dir=")
 	fmt.Println(dir)
 
-	dir, err := filepath.Abs(filepath.Clean(filepath.Dir(os.Args[0])))
+	dir, err := filepath.Abs(filepath.Clean(filepath.Dir(*config)))
 	if err != nil {
 		logrus.Fatal(err)
 	}
@@ -84,7 +89,7 @@ func log() {
 	logrus.Debug("Hello World!")
 }
 
-func config() {
+func Config() {
 	viper.SetEnvPrefix("esmeralda")
 	viper.AutomaticEnv()
 
@@ -92,6 +97,7 @@ func config() {
 	viper.SetConfigName("esmeralda")
 	viper.AddConfigPath("/etc/chuanyun/")
 	viper.AddConfigPath(".")
+
 	err := viper.ReadInConfig()
 	if err != nil {
 		logrus.WithFields(logrus.Fields{
@@ -109,3 +115,5 @@ func config() {
 		"settings": viper.AllSettings(),
 	}).Info("all user settings")
 }
+
+beijingchewu009
