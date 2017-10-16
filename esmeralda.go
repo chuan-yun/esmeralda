@@ -1,12 +1,14 @@
 package main
 
 import (
+	"flag"
 	"fmt"
 	"os"
 	"path/filepath"
 
 	"github.com/fsnotify/fsnotify"
 	"github.com/sirupsen/logrus"
+	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 )
 
@@ -22,6 +24,19 @@ func main() {
 
 	config()
 	log()
+
+	// flag.StringVar(, "config.file", "", "config file path")
+
+	var versionCmd = &cobra.Command{
+		Use:   "version",
+		Short: "Print the version number of Hugo",
+		Long:  `All software has versions. This is Hugo's`,
+		Run: func(cmd *cobra.Command, args []string) {
+			fmt.Println("Hugo Static Site Generator v0.9 -- HEAD")
+		},
+	}
+
+	flag.Parse()
 
 	fmt.Println(os.Args[0])
 
@@ -85,10 +100,9 @@ func config() {
 	}
 	viper.WatchConfig()
 	viper.OnConfigChange(func(e fsnotify.Event) {
-		fmt.Println("Config file changed:", e.Name)
 		logrus.WithFields(logrus.Fields{
-			"settings": viper.AllSettings(),
-		}).Info("all user settings")
+			"filename": e.Name,
+		}).Info("Config file changed:")
 	})
 
 	logrus.WithFields(logrus.Fields{
