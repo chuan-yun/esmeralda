@@ -12,6 +12,10 @@ profiling = false
 # enum: debug, info, warn, error, fatal, panic
 level = "info"
 
+# Log path
+# string
+path = ""
+
 
 [mysql]
 # Data Source Name
