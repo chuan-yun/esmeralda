@@ -1,27 +1,63 @@
 package main
 
 import (
+	"context"
 	"flag"
 	"fmt"
+	"net/http"
 	"os"
 	"path/filepath"
 	"runtime"
+	"runtime/trace"
+
+	"golang.org/x/sync/errgroup"
 
 	"github.com/fsnotify/fsnotify"
+	"github.com/prometheus/client_golang/prometheus/promhttp"
 	"github.com/sirupsen/logrus"
 	"github.com/spf13/viper"
 )
 
 var (
-	version = flag.Bool("version", false, "output version information and exit")
-	help    = flag.Bool("help", false, "output help information and exit")
-	config  = flag.String("config", "/etc/chuanyun/esmeralda.toml", "config file path")
+	version     = flag.Bool("version", false, "output version information and exit")
+	help        = flag.Bool("help", false, "output help information and exit")
+	config      = flag.String("config", "/etc/chuanyun/esmeralda.toml", "config file path")
+	profile     = flag.Bool("profile", false, "Turn on pprof profiling")
+	profilePort = flag.Int("profile-port", 6060, "Define custom port for profiling")
 
 	GitTag    = "2000.01.01.release"
 	BuildTime = "2000-01-01T00:00:00+0800"
 )
 
-func PrintVersionInfo() {
+type EsmeraldaServer interface {
+	Start()
+	Shutdown(code int, reason string)
+}
+
+type EsmeraldaServerImpl struct {
+	context       context.Context
+	shutdownFn    context.CancelFunc
+	childRoutines *errgroup.Group
+}
+
+func NewEsmeraldaServer() EsmeraldaServer {
+	rootCtx, shutdownFn := context.WithCancel(context.Background())
+	childRoutines, childCtx := errgroup.WithContext(rootCtx)
+
+	return &EsmeraldaServerImpl{
+		context:       childCtx,
+		shutdownFn:    shutdownFn,
+		childRoutines: childRoutines,
+	}
+}
+
+func (this *EsmeraldaServerImpl) Start() {
+}
+
+func (this *EsmeraldaServerImpl) Shutdown(code int, reason string) {
+}
+
+func printVersionInfo() {
 	fmt.Println("esmeralda")
 	fmt.Println("version: " + GitTag + ", build: " + BuildTime)
 	fmt.Println("Copyright (c) 2017, chuanyun.io. All rights reserved.")
@@ -34,13 +70,32 @@ func main() {
 	flag.Parse()
 
 	if *version {
-		PrintVersionInfo()
+		printVersionInfo()
 		os.Exit(0)
 	}
 
 	if *help {
 		flag.Usage()
 		os.Exit(0)
+	}
+
+	if *profile {
+		runtime.SetBlockProfileRate(1)
+		go func() {
+			http.ListenAndServe(fmt.Sprintf("localhost:%d", *profilePort), nil)
+		}()
+
+		f, err := os.Create("trace.out")
+		if err != nil {
+			panic(err)
+		}
+		defer f.Close()
+
+		err = trace.Start(f)
+		if err != nil {
+			panic(err)
+		}
+		defer trace.Stop()
 	}
 
 	fmt.Println(*config)
@@ -59,6 +114,21 @@ func main() {
 	dir, err = os.Getwd()
 	fmt.Print("Wd=")
 	fmt.Println(dir)
+}
+
+func exporter() {
+	http.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
+		w.Write([]byte(`
+		<html>
+			<head><title>Chuanyun Quasimodo Exporter</title></head>
+			<body>
+				<h1>Chuanyun Quasimodo Exporter</h1>
+				<p><a href="/metrics">Metrics</a></p>
+			</body>
+		</html>`))
+	})
+	http.Handle("/metrics", promhttp.Handler())
+	// logrus.Fatal(http.ListenAndServe(":"+config.Config.Prometheus.Port, nil))
 }
 
 func log() {
@@ -115,5 +185,3 @@ func Config() {
 		"settings": viper.AllSettings(),
 	}).Info("all user settings")
 }
-
-beijingchewu009
