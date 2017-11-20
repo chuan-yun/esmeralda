@@ -56,6 +56,7 @@ func NewEsmeraldaServer() EsmeraldaServer {
 }
 
 func (this *EsmeraldaServerImpl) Start() {
+	Config(*configFilePath)
 }
 
 func (this *EsmeraldaServerImpl) Shutdown(code int, reason string) {
@@ -102,7 +103,9 @@ func main() {
 		defer trace.Stop()
 	}
 
-	Config(*configFilePath)
+	server := NewEsmeraldaServer()
+	server.Start()
+
 }
 
 func exporter() {
