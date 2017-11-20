@@ -20,6 +20,9 @@ VERSION      ?= $(shell git describe --tags --always --dirty="-dev" --match=v* 2
 
 LDFLAGS       = -ldflags "-X main.GitTag=${VERSION} -X main.BuildTime=${DATE}"
 
+ifeq ($(OS),Windows_NT)
+    BINARY := $(BINARY).exe
+endif
 
 all: format vet build
 	@echo
