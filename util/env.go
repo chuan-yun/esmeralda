@@ -14,5 +14,6 @@ func Message(msg string) string {
 	} else {
 		file = file[i+1:]
 	}
+
 	return fmt.Sprintf("File: %s; Function: %s; Line: %d; Message: %s", file, runtime.FuncForPC(function).Name(), line, msg)
 }
