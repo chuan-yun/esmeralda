@@ -16,9 +16,9 @@ pkgs          = $(shell $(GO) list ./... | grep -v /vendor/)
 
 BINARY  	  = esmeralda
 DATE         ?= $(shell date +%FT%T%z)
-VERSION      ?= $(shell git describe --tags --always --dirty="-dev" --match=v* 2> /dev/null || echo v0)
+COMMIT       ?= $(shell git describe --tags --always --dirty="-dev" --match=v* 2> /dev/null || echo v0)
 
-LDFLAGS       = -ldflags "-X main.GitTag=${VERSION} -X main.BuildTime=${DATE}"
+LDFLAGS       = -ldflags "-X main.commit=${COMMIT} -X main.buildstamp=${DATE}"
 
 ifeq ($(OS),Windows_NT)
     BINARY := $(BINARY).exe

@@ -19,14 +19,16 @@ import (
 )
 
 var (
-	version     = flag.Bool("version", false, "output version information and exit")
-	help        = flag.Bool("help", false, "output help information and exit")
-	config      = flag.String("config", "/etc/chuanyun/esmeralda.toml", "config file path")
-	profile     = flag.Bool("profile", false, "Turn on pprof profiling")
-	profilePort = flag.Int("profile-port", 6060, "Define custom port for profiling")
+	commit     = "2000.01.01.release"
+	buildstamp = "2000-01-01T00:00:00+0800"
+)
 
-	GitTag    = "2000.01.01.release"
-	BuildTime = "2000-01-01T00:00:00+0800"
+var (
+	configFile    = flag.String("config", "/etc/chuanyun/esmeralda.toml", "config file path")
+	isShowVersion = flag.Bool("version", false, "output version information and exit")
+	isShowHelp    = flag.Bool("help", false, "output help information and exit")
+	pprof         = flag.Bool("pprof", false, "Turn on pprof profiling")
+	pprofPort     = flag.Int("pprof.port", 11011, "Define custom port for profiling")
 )
 
 type EsmeraldaServer interface {
@@ -59,7 +61,7 @@ func (this *EsmeraldaServerImpl) Shutdown(code int, reason string) {
 
 func printVersionInfo() {
 	fmt.Println("esmeralda")
-	fmt.Println("version: " + GitTag + ", build: " + BuildTime)
+	fmt.Println("commit: " + commit + ", build: " + buildstamp)
 	fmt.Println("Copyright (c) 2017, chuanyun.io. All rights reserved.")
 }
 
@@ -69,20 +71,20 @@ func main() {
 
 	flag.Parse()
 
-	if *version {
+	if *isShowVersion {
 		printVersionInfo()
 		os.Exit(0)
 	}
 
-	if *help {
+	if *isShowHelp {
 		flag.Usage()
 		os.Exit(0)
 	}
 
-	if *profile {
+	if *pprof {
 		runtime.SetBlockProfileRate(1)
 		go func() {
-			http.ListenAndServe(fmt.Sprintf("localhost:%d", *profilePort), nil)
+			http.ListenAndServe(fmt.Sprintf("localhost:%d", *pprofPort), nil)
 		}()
 
 		f, err := os.Create("trace.out")
