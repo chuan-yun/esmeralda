@@ -9,7 +9,7 @@
 
 
 GO           ?= GO15VENDOREXPERIMENT=1 go
-GOPATH 		 := $(firstword $(subst :, ,$(shell $(GO) env GOPATH)))
+GOPATH 		 ?= $(firstword $(subst :, ,$(shell $(GO) env GOPATH)))
 
 STATICCHECK  ?= $(GOPATH)/bin/staticcheck
 pkgs          = $(shell $(GO) list ./... | grep -v /vendor/)
