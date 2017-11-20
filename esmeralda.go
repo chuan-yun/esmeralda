@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"errors"
 	"flag"
 	"fmt"
 	"net/http"
@@ -9,6 +10,9 @@ import (
 	"path/filepath"
 	"runtime"
 	"runtime/trace"
+
+	"chuanyun.io/esmeralda/util"
+	validator "gopkg.in/asaskevich/govalidator.v4"
 
 	"golang.org/x/sync/errgroup"
 
@@ -65,6 +69,32 @@ func printVersionInfo() {
 	fmt.Println("Copyright (c) 2017, chuanyun.io. All rights reserved.")
 }
 
+func validateConfigFile(pathArg string) (configFilePath string, err error) {
+	fmt.Println(pathArg)
+
+	ok, _ := validator.IsFilePath(pathArg)
+	if !ok {
+		return "", errors.New(util.Message("not a validate file path"))
+	}
+
+	dir := filepath.Dir(pathArg)
+	fmt.Print("Dir=")
+	fmt.Println(dir)
+
+	dir, err = filepath.Abs(filepath.Clean(filepath.Dir(pathArg)))
+	if err != nil {
+		logrus.Fatal(err)
+	}
+	fmt.Print("Abs=")
+	fmt.Println(dir)
+
+	dir, err = os.Getwd()
+	fmt.Print("Wd=")
+	fmt.Println(dir)
+
+	return
+}
+
 func main() {
 
 	runtime.GOMAXPROCS(runtime.NumCPU())
@@ -100,22 +130,13 @@ func main() {
 		defer trace.Stop()
 	}
 
-	fmt.Println(*config)
+	fmt.Println(util.Message("not a validate file path"))
 
-	dir := filepath.Dir(*config)
-	fmt.Print("Dir=")
-	fmt.Println(dir)
-
-	dir, err := filepath.Abs(filepath.Clean(filepath.Dir(*config)))
-	if err != nil {
-		logrus.Fatal(err)
-	}
-	fmt.Print("Abs=")
-	fmt.Println(dir)
-
-	dir, err = os.Getwd()
-	fmt.Print("Wd=")
-	fmt.Println(dir)
+	// configFilePath, err := validateConfigFile(*configFile)
+	// if err != nil {
+	// 	panic(err)
+	// }
+	// fmt.Println(configFilePath)
 }
 
 func exporter() {
