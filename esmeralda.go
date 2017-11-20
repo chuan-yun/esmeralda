@@ -2,7 +2,6 @@ package main
 
 import (
 	"context"
-	"errors"
 	"flag"
 	"fmt"
 	"net/http"
@@ -12,7 +11,6 @@ import (
 	"runtime/trace"
 
 	"chuanyun.io/esmeralda/util"
-	validator "gopkg.in/asaskevich/govalidator.v4"
 
 	"golang.org/x/sync/errgroup"
 
@@ -28,11 +26,11 @@ var (
 )
 
 var (
-	configFile    = flag.String("config", "/etc/chuanyun/esmeralda.toml", "config file path")
-	isShowVersion = flag.Bool("version", false, "output version information and exit")
-	isShowHelp    = flag.Bool("help", false, "output help information and exit")
-	pprof         = flag.Bool("pprof", false, "Turn on pprof profiling")
-	pprofPort     = flag.Int("pprof.port", 11011, "Define custom port for profiling")
+	configFilePath = flag.String("config", "/etc/chuanyun/esmeralda.toml", "config file path")
+	isShowVersion  = flag.Bool("version", false, "output version information and exit")
+	isShowHelp     = flag.Bool("help", false, "output help information and exit")
+	pprof          = flag.Bool("pprof", false, "Turn on pprof profiling")
+	pprofPort      = flag.Int("pprof.port", 11011, "Define custom port for profiling")
 )
 
 type EsmeraldaServer interface {
@@ -67,32 +65,6 @@ func printVersionInfo() {
 	fmt.Println("esmeralda")
 	fmt.Println("commit: " + commit + ", build: " + buildstamp)
 	fmt.Println("Copyright (c) 2017, chuanyun.io. All rights reserved.")
-}
-
-func validateConfigFile(pathArg string) (configFilePath string, err error) {
-	fmt.Println(pathArg)
-
-	ok, _ := validator.IsFilePath(pathArg)
-	if !ok {
-		return "", errors.New(util.Message("not a validate file path"))
-	}
-
-	dir := filepath.Dir(pathArg)
-	fmt.Print("Dir=")
-	fmt.Println(dir)
-
-	dir, err = filepath.Abs(filepath.Clean(filepath.Dir(pathArg)))
-	if err != nil {
-		logrus.Fatal(err)
-	}
-	fmt.Print("Abs=")
-	fmt.Println(dir)
-
-	dir, err = os.Getwd()
-	fmt.Print("Wd=")
-	fmt.Println(dir)
-
-	return
 }
 
 func main() {
@@ -130,8 +102,7 @@ func main() {
 		defer trace.Stop()
 	}
 
-	fmt.Println(util.Message("not a validate file path"))
-
+	Config(*configFilePath)
 	// configFilePath, err := validateConfigFile(*configFile)
 	// if err != nil {
 	// 	panic(err)
@@ -182,20 +153,20 @@ func log() {
 	logrus.Debug("Hello World!")
 }
 
-func Config() {
+func Config(in string) {
+	in, err := filepath.Abs(filepath.Clean(in))
+	if err != nil {
+		panic(util.Message(err.Error()))
+	}
+
 	viper.SetEnvPrefix("esmeralda")
 	viper.AutomaticEnv()
-
+	viper.SetConfigFile(in)
 	viper.SetConfigType("toml")
-	viper.SetConfigName("esmeralda")
-	viper.AddConfigPath("/etc/chuanyun/")
-	viper.AddConfigPath(".")
 
-	err := viper.ReadInConfig()
+	err = viper.ReadInConfig()
 	if err != nil {
-		logrus.WithFields(logrus.Fields{
-			"error": err,
-		}).Panic("error occurred during config initialization")
+		panic(util.Message(err.Error()))
 	}
 	viper.WatchConfig()
 	viper.OnConfigChange(func(e fsnotify.Event) {
@@ -203,8 +174,4 @@ func Config() {
 			"filename": e.Name,
 		}).Info("Config file changed:")
 	})
-
-	logrus.WithFields(logrus.Fields{
-		"settings": viper.AllSettings(),
-	}).Info("all user settings")
 }
