@@ -103,11 +103,6 @@ func main() {
 	}
 
 	Config(*configFilePath)
-	// configFilePath, err := validateConfigFile(*configFile)
-	// if err != nil {
-	// 	panic(err)
-	// }
-	// fmt.Println(configFilePath)
 }
 
 func exporter() {
