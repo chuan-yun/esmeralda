@@ -17,6 +17,7 @@ import (
 	"github.com/fsnotify/fsnotify"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 	"github.com/sirupsen/logrus"
+	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 )
 
@@ -103,9 +104,45 @@ func main() {
 		defer trace.Stop()
 	}
 
+	var collectorCmd = &cobra.Command{
+		Use:   "collector",
+		Short: "Hugo is a very fast static site generator",
+		Long: `A Fast and Flexible Static Site Generator built with
+					  love by spf13 and friends in Go.
+					  Complete documentation is available at http://hugo.spf13.com`,
+		Run: func(cmd *cobra.Command, args []string) {
+			// Do Stuff Here
+		},
+	}
+
+	var transferCmd = &cobra.Command{
+		Use:   "transfer",
+		Short: "Hugo is a very fast static site generator",
+		Long: `A Fast and Flexible Static Site Generator built with
+					  love by spf13 and friends in Go.
+					  Complete documentation is available at http://hugo.spf13.com`,
+		Run: func(cmd *cobra.Command, args []string) {
+			// Do Stuff Here
+		},
+	}
+
+	var exporterCmd = &cobra.Command{
+		Use:   "exporter",
+		Short: "Hugo is a very fast static site generator",
+		Long: `A Fast and Flexible Static Site Generator built with
+					  love by spf13 and friends in Go.
+					  Complete documentation is available at http://hugo.spf13.com`,
+		Run: func(cmd *cobra.Command, args []string) {
+			// Do Stuff Here
+		},
+	}
+
+	collectorCmd.Execute()
+	transferCmd.Execute()
+	exporterCmd.Execute()
+
 	server := NewEsmeraldaServer()
 	server.Start()
-
 }
 
 func exporter() {
