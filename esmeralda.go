@@ -111,7 +111,7 @@ func main() {
 					  love by spf13 and friends in Go.
 					  Complete documentation is available at http://hugo.spf13.com`,
 		Run: func(cmd *cobra.Command, args []string) {
-			// Do Stuff Here
+			fmt.Println(util.Message(cmd.BashCompletionFunction))
 		},
 	}
 
@@ -122,7 +122,7 @@ func main() {
 					  love by spf13 and friends in Go.
 					  Complete documentation is available at http://hugo.spf13.com`,
 		Run: func(cmd *cobra.Command, args []string) {
-			// Do Stuff Here
+			fmt.Println(util.Message(cmd.BashCompletionFunction))
 		},
 	}
 
@@ -133,7 +133,7 @@ func main() {
 					  love by spf13 and friends in Go.
 					  Complete documentation is available at http://hugo.spf13.com`,
 		Run: func(cmd *cobra.Command, args []string) {
-			// Do Stuff Here
+			fmt.Println(util.Message(cmd.BashCompletionFunction))
 		},
 	}
 

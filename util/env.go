@@ -15,5 +15,9 @@ func Message(msg string) string {
 		file = file[i+1:]
 	}
 
+	if msg == "" {
+		msg = "\"\""
+	}
+
 	return fmt.Sprintf("File: %s; Function: %s; Line: %d; Message: %s", file, runtime.FuncForPC(function).Name(), line, msg)
 }

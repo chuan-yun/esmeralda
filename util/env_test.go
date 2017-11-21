@@ -6,4 +6,5 @@ import (
 
 func TestMessage(t *testing.T) {
 	t.Log(Message("test"))
+	t.Log(Message(""))
 }
