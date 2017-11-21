@@ -2,7 +2,6 @@ package main
 
 import (
 	"context"
-	"flag"
 	"fmt"
 	"net/http"
 	"os"
@@ -21,20 +20,13 @@ import (
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 	"github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
+	_ "github.com/spf13/pflag"
 	"github.com/spf13/viper"
 )
 
 var (
 	commit     = "2000.01.01.release"
 	buildstamp = "2000-01-01T00:00:00+0800"
-)
-
-var (
-	configFilePath = flag.String("config", "/etc/chuanyun/esmeralda.toml", "config file path")
-	isShowVersion  = flag.Bool("version", false, "output version information and exit")
-	isShowHelp     = flag.Bool("help", false, "output help information and exit")
-	pprof          = flag.Bool("pprof", false, "Turn on pprof profiling")
-	pprofPort      = flag.Int("pprof.port", 11011, "Define custom port for profiling")
 
 	exitChan = make(chan int)
 )
@@ -62,7 +54,7 @@ func NewEsmeraldaServer() EsmeraldaServer {
 }
 
 func (this *EsmeraldaServerImpl) Start() {
-	Config(*configFilePath)
+	// readConfig(*configFilePath)
 }
 
 func (this *EsmeraldaServerImpl) Shutdown(code int, reason string) {
@@ -83,29 +75,79 @@ func (this *EsmeraldaServerImpl) Shutdown(code int, reason string) {
 
 }
 
-func printVersionInfo() {
-	fmt.Println("esmeralda")
-	fmt.Println("commit: " + commit + ", build: " + buildstamp)
-	fmt.Println("Copyright (c) 2017, chuanyun.io. All rights reserved.")
-}
-
 func main() {
 
 	runtime.GOMAXPROCS(runtime.NumCPU())
 
-	flag.Parse()
-
-	if *isShowVersion {
-		printVersionInfo()
-		os.Exit(0)
+	var collectorCmd = &cobra.Command{
+		Use:   "collector",
+		Short: "Hugo is a very fast static site generator",
+		Long: `A Fast and Flexible Static Site Generator built with
+					  love by spf13 and friends in Go.
+					  Complete documentation is available at http://hugo.spf13.com`,
+		Run: func(cmd *cobra.Command, args []string) {
+			fmt.Println(util.Message("collectorCmd"))
+		},
 	}
 
-	if *isShowHelp {
-		flag.Usage()
-		os.Exit(0)
+	var transferCmd = &cobra.Command{
+		Use:   "transfer",
+		Short: "Hugo is a very fast static site generator",
+		Long: `A Fast and Flexible Static Site Generator built with
+					  love by spf13 and friends in Go.
+					  Complete documentation is available at http://hugo.spf13.com`,
+		Run: func(cmd *cobra.Command, args []string) {
+			fmt.Println(util.Message("transferCmd"))
+		},
 	}
 
-	if *pprof {
+	var apiCmd = &cobra.Command{
+		Use:   "api",
+		Short: "Hugo is a very fast static site generator",
+		Long: `A Fast and Flexible Static Site Generator built with
+					  love by spf13 and friends in Go.
+					  Complete documentation is available at http://hugo.spf13.com`,
+		Run: func(cmd *cobra.Command, args []string) {
+			fmt.Println(util.Message("apiCmd"))
+		},
+	}
+
+	var versionCmd = &cobra.Command{
+		Use:   "version",
+		Short: "Print the version",
+		Long:  `Print the release software version info`,
+		Run: func(cmd *cobra.Command, args []string) {
+
+			fmt.Println(filepath.Base(os.Args[0]))
+			fmt.Println("commit: " + commit + ", build: " + buildstamp)
+			fmt.Println("Copyright (c) 2017, chuanyun.io. All rights reserved.")
+
+			os.Exit(0)
+		},
+	}
+
+	var rootCommand = &cobra.Command{
+		Use:  filepath.Base(os.Args[0]),
+		Long: `Esmeralda is a Full Stack Distributed Tracing Monitoring System Server`,
+		Run: func(cmd *cobra.Command, args []string) {
+			fmt.Println("Hello, World!")
+		},
+		Aliases: []string{"collector", "transfer", "api"},
+	}
+
+	flags := rootCommand.Flags()
+
+	flags.String("config", "/etc/chuanyun/esmeralda.toml", "config file path")
+	flags.Bool("help", false, "output help information and exit")
+	flags.Bool("pprof", false, "Turn on pprof profiling")
+	flags.Int("pprof.port", 11011, "Define custom port for profiling")
+
+	viper.BindPFlag("config", flags.Lookup("config"))
+	viper.BindPFlag("help", flags.Lookup("help"))
+	viper.BindPFlag("pprof", flags.Lookup("pprof"))
+	viper.BindPFlag("pprof.port", flags.Lookup("pprof.port"))
+
+	if viper.GetBool("pprof") {
 		runtime.SetBlockProfileRate(1)
 		go func() {
 			http.ListenAndServe(fmt.Sprintf("localhost:%d", *pprofPort), nil)
@@ -124,63 +166,17 @@ func main() {
 		defer trace.Stop()
 	}
 
-	var collectorCmd = &cobra.Command{
-		Use:   "collector",
-		Short: "Hugo is a very fast static site generator",
-		Long: `A Fast and Flexible Static Site Generator built with
-					  love by spf13 and friends in Go.
-					  Complete documentation is available at http://hugo.spf13.com`,
-		Run: func(cmd *cobra.Command, args []string) {
-			fmt.Println(util.Message(cmd.BashCompletionFunction))
-		},
-	}
+	// serverCmd.PersistentFlags().StringVarP(&configFilePath, "config", "c", "/etc/chuanyun/esmeralda.toml", "config file path")
+	// serverCmd.PersistentFlags().BoolVar(&pprof, "pprof", false, "config file path")
+	// serverCmd.PersistentFlags().Int32Var(&pprofPort, "pprof.port", 10101, "config file path")
 
-	var transferCmd = &cobra.Command{
-		Use:   "transfer",
-		Short: "Hugo is a very fast static site generator",
-		Long: `A Fast and Flexible Static Site Generator built with
-					  love by spf13 and friends in Go.
-					  Complete documentation is available at http://hugo.spf13.com`,
-		Run: func(cmd *cobra.Command, args []string) {
-			fmt.Println(util.Message(cmd.BashCompletionFunction))
-		},
-	}
-
-	var exporterCmd = &cobra.Command{
-		Use:   "exporter",
-		Short: "Hugo is a very fast static site generator",
-		Long: `A Fast and Flexible Static Site Generator built with
-					  love by spf13 and friends in Go.
-					  Complete documentation is available at http://hugo.spf13.com`,
-		Run: func(cmd *cobra.Command, args []string) {
-			fmt.Println(util.Message(cmd.BashCompletionFunction))
-		},
-	}
-
-	var apiCmd = &cobra.Command{
-		Use:   "api",
-		Short: "Hugo is a very fast static site generator",
-		Long: `A Fast and Flexible Static Site Generator built with
-					  love by spf13 and friends in Go.
-					  Complete documentation is available at http://hugo.spf13.com`,
-		Run: func(cmd *cobra.Command, args []string) {
-			fmt.Println(util.Message(cmd.BashCompletionFunction))
-
-			router := httprouter.New()
-			router.GET("/", Index)
-			router.GET("/hello/:name", Hello)
-
-			panic(http.ListenAndServe(":8080", router))
-		},
-	}
-
-	collectorCmd.Execute()
-	transferCmd.Execute()
-	exporterCmd.Execute()
-	apiCmd.Execute()
-
-	server := NewEsmeraldaServer()
-	server.Start()
+	rootCommand.AddCommand(collectorCmd, transferCmd, apiCmd, versionCmd)
+	rootCommand.PersistentFlags().StringVarP(configFilePath, "config", "c", "/etc/chuanyun/esmeralda.toml", "config file path")
+	rootCommand.SetHelpFunc(func(cmd *cobra.Command, args []string) {
+		// exporter()
+		fmt.Println("Hello, Help!")
+	})
+	rootCommand.Execute()
 }
 
 func Index(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
@@ -195,9 +191,9 @@ func exporter() {
 	http.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
 		w.Write([]byte(`
 		<html>
-			<head><title>Chuanyun Quasimodo Exporter</title></head>
+			<head><title>Metrics Exporter</title></head>
 			<body>
-				<h1>Chuanyun Quasimodo Exporter</h1>
+				<h1>Metrics Exporter</h1>
 				<p><a href="/metrics">Metrics</a></p>
 			</body>
 		</html>`))
@@ -252,7 +248,7 @@ func log() {
 	logrus.Debug("Hello World!")
 }
 
-func Config(in string) {
+func readConfig(in string) {
 	in, err := filepath.Abs(filepath.Clean(in))
 	if err != nil {
 		panic(util.Message(err.Error()))
