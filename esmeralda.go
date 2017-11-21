@@ -6,15 +6,18 @@ import (
 	"fmt"
 	"net/http"
 	"os"
+	"os/signal"
 	"path/filepath"
 	"runtime"
 	"runtime/trace"
+	"syscall"
 
 	"chuanyun.io/esmeralda/util"
 
 	"golang.org/x/sync/errgroup"
 
 	"github.com/fsnotify/fsnotify"
+	"github.com/julienschmidt/httprouter"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 	"github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
@@ -32,6 +35,8 @@ var (
 	isShowHelp     = flag.Bool("help", false, "output help information and exit")
 	pprof          = flag.Bool("pprof", false, "Turn on pprof profiling")
 	pprofPort      = flag.Int("pprof.port", 11011, "Define custom port for profiling")
+
+	exitChan = make(chan int)
 )
 
 type EsmeraldaServer interface {
@@ -61,6 +66,21 @@ func (this *EsmeraldaServerImpl) Start() {
 }
 
 func (this *EsmeraldaServerImpl) Shutdown(code int, reason string) {
+
+	// g.log.Info("Shutdown started", "code", code, "reason", reason)
+
+	// err := g.httpServer.Shutdown(g.context)
+	// if err != nil {
+	// 	g.log.Error("Failed to shutdown server", "error", err)
+	// }
+
+	// g.shutdownFn()
+	// err = g.childRoutines.Wait()
+
+	// g.log.Info("Shutdown completed", "reason", err)
+	// log.Close()
+	// os.Exit(code)
+
 }
 
 func printVersionInfo() {
@@ -137,12 +157,38 @@ func main() {
 		},
 	}
 
+	var apiCmd = &cobra.Command{
+		Use:   "api",
+		Short: "Hugo is a very fast static site generator",
+		Long: `A Fast and Flexible Static Site Generator built with
+					  love by spf13 and friends in Go.
+					  Complete documentation is available at http://hugo.spf13.com`,
+		Run: func(cmd *cobra.Command, args []string) {
+			fmt.Println(util.Message(cmd.BashCompletionFunction))
+
+			router := httprouter.New()
+			router.GET("/", Index)
+			router.GET("/hello/:name", Hello)
+
+			panic(http.ListenAndServe(":8080", router))
+		},
+	}
+
 	collectorCmd.Execute()
 	transferCmd.Execute()
 	exporterCmd.Execute()
+	apiCmd.Execute()
 
 	server := NewEsmeraldaServer()
 	server.Start()
+}
+
+func Index(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
+	fmt.Fprint(w, "Welcome!\n")
+}
+
+func Hello(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
+	fmt.Fprintf(w, "hello, %s!\n", ps.ByName("name"))
 }
 
 func exporter() {
@@ -158,6 +204,24 @@ func exporter() {
 	})
 	http.Handle("/metrics", promhttp.Handler())
 	// logrus.Fatal(http.ListenAndServe(":"+config.Config.Prometheus.Port, nil))
+}
+
+func listenToSystemSignals(server EsmeraldaServer) {
+	signalChan := make(chan os.Signal, 1)
+	ignoreChan := make(chan os.Signal, 1)
+	code := 0
+
+	signal.Notify(ignoreChan, syscall.SIGHUP)
+	signal.Notify(signalChan, os.Interrupt, os.Kill, syscall.SIGTERM)
+
+	select {
+	case sig := <-signalChan:
+		// Stops trace if profiling has been enabled
+		trace.Stop()
+		server.Shutdown(0, util.Message(fmt.Sprintf("system signal: %s", sig)))
+	case code = <-exitChan:
+		server.Shutdown(code, util.Message("startup error"))
+	}
 }
 
 func log() {

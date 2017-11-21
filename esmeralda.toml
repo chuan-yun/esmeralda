@@ -2,9 +2,6 @@
 # Application Environment
 # enum: development, testing, staging, production
 env = "production"
-# Enable Runtime Profiling
-# enum: false, true
-profiling = false
 
 
 [log]
@@ -14,7 +11,16 @@ level = "info"
 
 # Log path
 # string
-path = ""
+path = "/var/log/esmeralda.log"
+
+[api]
+# Api Port
+# int: 10101(default)
+port = 10101
+
+# Api path prefix
+# string
+prefix = ""
 
 
 [mysql]
