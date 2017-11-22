@@ -10,6 +10,8 @@ import (
 	"runtime"
 	"runtime/trace"
 
+	"chuanyun.io/esmeralda/util"
+
 	"golang.org/x/sync/errgroup"
 
 	"github.com/fsnotify/fsnotify"
@@ -27,8 +29,8 @@ var (
 	isShowVersionInfo = flag.Bool("version", false, "output version information and exit")
 	isShowHelpInfo    = flag.Bool("help", false, "output help information and exit")
 	configFilePath    = flag.String("config", "/etc/chuanyun/esmeralda.toml", "config file path")
-	profile           = flag.Bool("pprof", false, "Turn on pprof profiling")
-	profilePort       = flag.Int("pprof.port", 10101, "Define custom port for profiling")
+	profiling         = flag.Bool("pprof", false, "Turn on pprof profiling")
+	profilingPort     = flag.Int("pprof.port", 11011, "Define custom port for pprof profiling")
 )
 
 type EsmeraldaServer interface {
@@ -54,6 +56,7 @@ func NewEsmeraldaServer() EsmeraldaServer {
 }
 
 func (this *EsmeraldaServerImpl) Start() {
+	Config(*configFilePath)
 }
 
 func (this *EsmeraldaServerImpl) Shutdown(code int, reason string) {
@@ -61,7 +64,7 @@ func (this *EsmeraldaServerImpl) Shutdown(code int, reason string) {
 
 func printVersionInfo() {
 	fmt.Println("esmeralda")
-	fmt.Println("version: " + commit + ", build: " + BuildTime)
+	fmt.Println("commit: " + commit + ", build: " + buildstamp)
 	fmt.Println("Copyright (c) 2017, chuanyun.io. All rights reserved.")
 }
 
@@ -71,20 +74,20 @@ func main() {
 
 	flag.Parse()
 
-	if *version {
+	if *isShowVersionInfo {
 		printVersionInfo()
 		os.Exit(0)
 	}
 
-	if *help {
+	if *isShowHelpInfo {
 		flag.Usage()
 		os.Exit(0)
 	}
 
-	if *profile {
+	if *profiling {
 		runtime.SetBlockProfileRate(1)
 		go func() {
-			http.ListenAndServe(fmt.Sprintf("localhost:%d", *profilePort), nil)
+			http.ListenAndServe(fmt.Sprintf("localhost:%d", *profilingPort), nil)
 		}()
 
 		f, err := os.Create("trace.out")
@@ -100,22 +103,8 @@ func main() {
 		defer trace.Stop()
 	}
 
-	fmt.Println(*config)
-
-	dir := filepath.Dir(*config)
-	fmt.Print("Dir=")
-	fmt.Println(dir)
-
-	dir, err := filepath.Abs(filepath.Clean(filepath.Dir(*config)))
-	if err != nil {
-		logrus.Fatal(err)
-	}
-	fmt.Print("Abs=")
-	fmt.Println(dir)
-
-	dir, err = os.Getwd()
-	fmt.Print("Wd=")
-	fmt.Println(dir)
+	server := NewEsmeraldaServer()
+	server.Start()
 }
 
 func exporter() {
@@ -161,20 +150,20 @@ func log() {
 	logrus.Debug("Hello World!")
 }
 
-func Config() {
+func Config(in string) {
+	in, err := filepath.Abs(filepath.Clean(in))
+	if err != nil {
+		panic(util.Message(err.Error()))
+	}
+
 	viper.SetEnvPrefix("esmeralda")
 	viper.AutomaticEnv()
-
+	viper.SetConfigFile(in)
 	viper.SetConfigType("toml")
-	viper.SetConfigName("esmeralda")
-	viper.AddConfigPath("/etc/chuanyun/")
-	viper.AddConfigPath(".")
 
-	err := viper.ReadInConfig()
+	err = viper.ReadInConfig()
 	if err != nil {
-		logrus.WithFields(logrus.Fields{
-			"error": err,
-		}).Panic("error occurred during config initialization")
+		panic(util.Message(err.Error()))
 	}
 	viper.WatchConfig()
 	viper.OnConfigChange(func(e fsnotify.Event) {
@@ -182,8 +171,4 @@ func Config() {
 			"filename": e.Name,
 		}).Info("Config file changed:")
 	})
-
-	logrus.WithFields(logrus.Fields{
-		"settings": viper.AllSettings(),
-	}).Info("all user settings")
 }
