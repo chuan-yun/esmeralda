@@ -11,16 +11,15 @@ import (
 	"runtime/trace"
 	"syscall"
 
+	"chuanyun.io/esmeralda/config"
 	"chuanyun.io/esmeralda/util"
 
 	"golang.org/x/sync/errgroup"
 
-	"github.com/fsnotify/fsnotify"
 	"github.com/julienschmidt/httprouter"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 	"github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
-	_ "github.com/spf13/pflag"
 	"github.com/spf13/viper"
 )
 
@@ -54,7 +53,35 @@ func NewEsmeraldaServer() EsmeraldaServer {
 }
 
 func (this *EsmeraldaServerImpl) Start() {
-	// readConfig(*configFilePath)
+
+	config.Initialize(viper.GetString("config"))
+
+	logrus.Info(util.Message("EsmeraldaServer Start"))
+
+	go listenToSystemSignals(this)
+
+	if viper.GetBool("pprof") {
+		fmt.Println("Hello, pprof!")
+
+		runtime.SetBlockProfileRate(1)
+		go func() {
+			http.ListenAndServe(fmt.Sprintf("localhost:%d", viper.GetInt("pprof.port")), nil)
+		}()
+
+		f, err := os.Create("trace.out")
+		if err != nil {
+			panic(err)
+		}
+		defer f.Close()
+
+		err = trace.Start(f)
+		if err != nil {
+			panic(err)
+		}
+		defer trace.Stop()
+	}
+
+	go exporter()
 }
 
 func (this *EsmeraldaServerImpl) Shutdown(code int, reason string) {
@@ -97,51 +124,22 @@ func main() {
 		Use:  filepath.Base(os.Args[0]),
 		Long: `Esmeralda is a Full Stack Distributed Tracing Monitoring System Server`,
 		Run: func(cmd *cobra.Command, args []string) {
-			fmt.Println("Hello, World!")
+			server := NewEsmeraldaServer()
+			server.Start()
 		},
 	}
 
 	flags := rootCommand.Flags()
 
 	flags.String("config", "/etc/chuanyun/esmeralda.toml", "config file path")
-	flags.Bool("help", false, "output help information and exit")
 	flags.Bool("pprof", false, "Turn on pprof profiling")
 	flags.Int("pprof.port", 11011, "Define custom port for profiling")
 
 	viper.BindPFlag("config", flags.Lookup("config"))
-	viper.BindPFlag("help", flags.Lookup("help"))
 	viper.BindPFlag("pprof", flags.Lookup("pprof"))
 	viper.BindPFlag("pprof.port", flags.Lookup("pprof.port"))
 
-	if viper.GetBool("pprof") {
-		runtime.SetBlockProfileRate(1)
-		go func() {
-			http.ListenAndServe(fmt.Sprintf("localhost:%d", *pprofPort), nil)
-		}()
-
-		f, err := os.Create("trace.out")
-		if err != nil {
-			panic(err)
-		}
-		defer f.Close()
-
-		err = trace.Start(f)
-		if err != nil {
-			panic(err)
-		}
-		defer trace.Stop()
-	}
-
-	// serverCmd.PersistentFlags().StringVarP(&configFilePath, "config", "c", "/etc/chuanyun/esmeralda.toml", "config file path")
-	// serverCmd.PersistentFlags().BoolVar(&pprof, "pprof", false, "config file path")
-	// serverCmd.PersistentFlags().Int32Var(&pprofPort, "pprof.port", 10101, "config file path")
-
-	rootCommand.AddCommand(collectorCmd, transferCmd, apiCmd, versionCmd)
-	rootCommand.PersistentFlags().StringVarP(configFilePath, "config", "c", "/etc/chuanyun/esmeralda.toml", "config file path")
-	rootCommand.SetHelpFunc(func(cmd *cobra.Command, args []string) {
-		// exporter()
-		fmt.Println("Hello, Help!")
-	})
+	rootCommand.AddCommand(versionCmd)
 	rootCommand.Execute()
 }
 
@@ -184,55 +182,4 @@ func listenToSystemSignals(server EsmeraldaServer) {
 	case code = <-exitChan:
 		server.Shutdown(code, util.Message("startup error"))
 	}
-}
-
-func log() {
-
-	// content, err := ioutil.ReadFile("esmeralda.log")
-	// if err != nil {
-	// 	return nil, err
-	// }
-	// cfg, err := Load(string(content))
-	// if err != nil {
-	// 	return nil, err
-	// }
-	// resolveFilepaths(filepath.Dir(filename), cfg)
-
-	filepath.Base("/a/b.c")
-
-	logrus.SetFormatter(&logrus.JSONFormatter{})
-
-	file, err := os.OpenFile("esmeralda.log", os.O_CREATE|os.O_APPEND|os.O_WRONLY, 0666)
-	if err == nil {
-		logrus.SetOutput(file)
-	} else {
-		logrus.SetOutput(os.Stdout)
-		logrus.Fatal("Failed to log to file, using default stderr")
-	}
-	defer file.Close()
-
-	logrus.Debug("Hello World!")
-}
-
-func readConfig(in string) {
-	in, err := filepath.Abs(filepath.Clean(in))
-	if err != nil {
-		panic(util.Message(err.Error()))
-	}
-
-	viper.SetEnvPrefix("esmeralda")
-	viper.AutomaticEnv()
-	viper.SetConfigFile(in)
-	viper.SetConfigType("toml")
-
-	err = viper.ReadInConfig()
-	if err != nil {
-		panic(util.Message(err.Error()))
-	}
-	viper.WatchConfig()
-	viper.OnConfigChange(func(e fsnotify.Event) {
-		logrus.WithFields(logrus.Fields{
-			"filename": e.Name,
-		}).Info("Config file changed:")
-	})
 }

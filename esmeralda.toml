@@ -11,7 +11,7 @@ level = "info"
 
 # Log path
 # string
-path = "/var/log/esmeralda.log"
+path = "D:/Workspace/gopath/src/chuanyun.io/esmeralda/esmeralda.log"
 
 [api]
 # Api Port
