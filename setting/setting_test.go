@@ -1,10 +1,12 @@
 package setting
 
 import "testing"
-import "github.com/spf13/viper"
+import "github.com/sirupsen/logrus"
 
 func TestReadConfigFile(t *testing.T) {
 	configFilePath := "../esmeralda.toml"
 	ReadConfigFile(configFilePath)
-	t.Log(viper.AllSettings())
+	// logrus.Info("tst ", Settings)
+	LogInitialize()
+	logrus.Info("tst2 ", Settings)
 }

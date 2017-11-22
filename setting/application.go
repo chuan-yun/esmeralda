@@ -7,6 +7,6 @@ const (
 	DEV     string = "development"
 )
 
-var Application struct {
+type ApplicationSettings struct {
 	Env string
 }
