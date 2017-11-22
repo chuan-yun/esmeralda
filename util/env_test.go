@@ -1,10 +1,13 @@
 package util
 
 import (
-	"testing"
+	"fmt"
 )
 
-func TestMessage(t *testing.T) {
-	t.Log(Message("test"))
-	t.Log(Message(""))
+func ExampleMessage() {
+	fmt.Println(Message("test"))
+	fmt.Println(Message(""))
+	// Output:
+	// File: env_test.go; Function: chuanyun.io/esmeralda/util.ExampleMessage; Line: 8; Message: test
+	// File: env_test.go; Function: chuanyun.io/esmeralda/util.ExampleMessage; Line: 9; Message: ""
 }

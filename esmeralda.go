@@ -1,7 +1,6 @@
 package main
 
 import (
-	"context"
 	"flag"
 	"fmt"
 	"net/http"
@@ -10,20 +9,12 @@ import (
 	"runtime"
 	"runtime/trace"
 
-	"chuanyun.io/esmeralda/util"
-	"chuanyun.io/quasimodo/config"
-
-	"golang.org/x/sync/errgroup"
-
-	"github.com/fsnotify/fsnotify"
-	"github.com/prometheus/client_golang/prometheus/promhttp"
-	"github.com/sirupsen/logrus"
-	"github.com/spf13/viper"
+	"chuanyun.io/esmeralda/server"
 )
 
 var (
-	commit     = "2000.01.01.release"
-	buildstamp = "2000-01-01T00:00:00+0800"
+	commit     = "N/A"
+	buildstamp = "N/A"
 )
 
 var (
@@ -33,35 +24,6 @@ var (
 	profiling         = flag.Bool("pprof", false, "Turn on pprof profiling")
 	profilingPort     = flag.Int("pprof.port", 11011, "Define custom port for pprof profiling")
 )
-
-type EsmeraldaServer interface {
-	Start()
-	Shutdown(code int, reason string)
-}
-
-type EsmeraldaServerImpl struct {
-	context       context.Context
-	shutdownFn    context.CancelFunc
-	childRoutines *errgroup.Group
-}
-
-func NewEsmeraldaServer() EsmeraldaServer {
-	rootCtx, shutdownFn := context.WithCancel(context.Background())
-	childRoutines, childCtx := errgroup.WithContext(rootCtx)
-
-	return &EsmeraldaServerImpl{
-		context:       childCtx,
-		shutdownFn:    shutdownFn,
-		childRoutines: childRoutines,
-	}
-}
-
-func (this *EsmeraldaServerImpl) Start() {
-	Config(*configFilePath)
-}
-
-func (this *EsmeraldaServerImpl) Shutdown(code int, reason string) {
-}
 
 func printVersionInfo() {
 	fmt.Println(filepath.Base(os.Args[0]))
@@ -104,74 +66,6 @@ func main() {
 		defer trace.Stop()
 	}
 
-	server := NewEsmeraldaServer()
+	server := server.NewEsmeraldaServer()
 	server.Start()
-}
-
-func exporter(port int64, prefix string) {
-	http.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
-		w.Write([]byte(`
-		<html>
-			<head><title>Metrics Exporter</title></head>
-			<body>
-				<h1>Metrics Exporter</h1>
-				<p><a href="./metrics">Metrics</a></p>
-			</body>
-		</html>`))
-	})
-	http.Handle("/metrics", promhttp.Handler())
-	logrus.Fatal(http.ListenAndServe(":"+config.Config.Prometheus.Port, nil))
-}
-
-func log() {
-
-	// content, err := ioutil.ReadFile("esmeralda.log")
-	// if err != nil {
-	// 	return nil, err
-	// }
-	// cfg, err := Load(string(content))
-	// if err != nil {
-	// 	return nil, err
-	// }
-	// resolveFilepaths(filepath.Dir(filename), cfg)
-
-	filepath.Base("/a/b.c")
-
-	logrus.SetFormatter(&logrus.JSONFormatter{})
-
-	file, err := os.OpenFile("esmeralda.log", os.O_CREATE|os.O_APPEND|os.O_WRONLY, 0666)
-	if err == nil {
-		logrus.SetOutput(file)
-	} else {
-		logrus.SetOutput(os.Stdout)
-		logrus.Fatal("Failed to log to file, using default stderr")
-	}
-	defer file.Close()
-
-	logrus.Debug("Hello World!")
-}
-
-func readConfigFile(in string) {
-	in, err := filepath.Abs(filepath.Clean(in))
-	if err != nil {
-		panic(util.Message(err.Error()))
-	}
-
-	viper.SetConfigFile(in)
-	viper.SetConfigType("toml")
-
-	err = viper.ReadInConfig()
-	if err != nil {
-		panic(util.Message(err.Error()))
-	}
-	viper.WatchConfig()
-	viper.OnConfigChange(func(e fsnotify.Event) {
-		logrus.WithFields(logrus.Fields{
-			"filename": e.Name,
-		}).Info("Config file changed:")
-	})
-
-	for true {
-
-	}
 }
