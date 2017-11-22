@@ -8,8 +8,8 @@ import (
 	"os/signal"
 	"runtime/trace"
 	"syscall"
+
 	"github.com/julienschmidt/httprouter"
-    "net/http"
 
 	"chuanyun.io/quasimodo/config"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
@@ -41,13 +41,21 @@ func NewEsmeraldaServer() Server {
 	}
 }
 
+func Index(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
+	fmt.Fprint(w, "Welcome!\n")
+}
+
+func Hello(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
+	fmt.Fprintf(w, "hello, %s!\n", ps.ByName("name"))
+}
+
 func (this *EsmeraldaServerImpl) Start() {
 	// config.ReadConfigFile(*configFilePath)
 	router := httprouter.New()
-    router.GET("/", Index)
-    router.GET("/hello/:name", Hello)
+	router.GET("/", Index)
+	router.GET("/hello/:name", Hello)
 
-    log.Fatal(http.ListenAndServe(":8080", router))
+	panic(http.ListenAndServe(":8080", router))
 }
 
 func (this *EsmeraldaServerImpl) Shutdown(code int, reason string) {
