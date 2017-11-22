@@ -2,6 +2,7 @@ package server
 
 import (
 	"context"
+	"flag"
 	"fmt"
 	"net/http"
 	"os"
@@ -11,13 +12,13 @@ import (
 
 	"github.com/julienschmidt/httprouter"
 
-	"chuanyun.io/quasimodo/config"
-	"github.com/prometheus/client_golang/prometheus/promhttp"
-	"github.com/sirupsen/logrus"
+	"chuanyun.io/esmeralda/setting"
 	"golang.org/x/sync/errgroup"
 )
 
 var exitChan = make(chan int)
+
+var configFilePath = flag.String("config", "/etc/chuanyun/esmeralda.toml", "config file path")
 
 type Server interface {
 	Start()
@@ -51,11 +52,13 @@ func Hello(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
 
 func (this *EsmeraldaServerImpl) Start() {
 	// config.ReadConfigFile(*configFilePath)
-	router := httprouter.New()
-	router.GET("/", Index)
-	router.GET("/hello/:name", Hello)
+	// router := httprouter.New()
+	// router.GET("/", Index)
+	// router.GET("/hello/:name", Hello)
 
-	panic(http.ListenAndServe(":8080", router))
+	// panic(http.ListenAndServe(":8080", router))
+
+	setting.Initialize(*configFilePath)
 }
 
 func (this *EsmeraldaServerImpl) Shutdown(code int, reason string) {
@@ -79,17 +82,17 @@ func listenToSystemSignals(server Server) {
 	}
 }
 
-func exporter(port int64, prefix string) {
-	http.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
-		w.Write([]byte(`
-		<html>
-			<head><title>Metrics Exporter</title></head>
-			<body>
-				<h1>Metrics Exporter</h1>
-				<p><a href="./metrics">Metrics</a></p>
-			</body>
-		</html>`))
-	})
-	http.Handle("/metrics", promhttp.Handler())
-	logrus.Fatal(http.ListenAndServe(":"+config.Config.Prometheus.Port, nil))
-}
+// func exporter(port int64, prefix string) {
+// 	http.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
+// 		w.Write([]byte(`
+// 		<html>
+// 			<head><title>Metrics Exporter</title></head>
+// 			<body>
+// 				<h1>Metrics Exporter</h1>
+// 				<p><a href="./metrics">Metrics</a></p>
+// 			</body>
+// 		</html>`))
+// 	})
+// 	http.Handle("/metrics", promhttp.Handler())
+// 	logrus.Fatal(http.ListenAndServe(":"+config.Config.Prometheus.Port, nil))
+// }

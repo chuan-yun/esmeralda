@@ -20,7 +20,6 @@ var (
 var (
 	isShowVersionInfo = flag.Bool("version", false, "output version information and exit")
 	isShowHelpInfo    = flag.Bool("help", false, "output help information and exit")
-	configFilePath    = flag.String("config", "/etc/chuanyun/esmeralda.toml", "config file path")
 	profiling         = flag.Bool("pprof", false, "Turn on pprof profiling")
 	profilingPort     = flag.Int("pprof.port", 11011, "Define custom port for pprof profiling")
 )
