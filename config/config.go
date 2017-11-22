@@ -41,15 +41,29 @@ func Initialize(configFilePath string) {
 		panic(util.Message(err.Error()))
 	}
 
+	logrus.WithFields(logrus.Fields{
+		"setting": viper.AllSettings(),
+	}).Info("setting")
+
 	Esmeralda.Config.WatchConfig()
 	Esmeralda.Config.OnConfigChange(func(e fsnotify.Event) {
-
 		logrus.WithFields(logrus.Fields{
-			"filename": e.Name,
+			// "filename": e.Name,
+			"string": e,
+			// "op":       e.Op,
 		}).Info("Config file changed:")
+
+		// err = viper.ReadInConfig()
+		// if err != nil {
+		// 	panic(util.Message(err.Error()))
+		// }
+
+		// logrus.WithFields(logrus.Fields{
+		// 	"setting": viper.AllSettings(),
+		// }).Info("setting")
 	})
 
-	if true {
+	for true {
 
 	}
 }

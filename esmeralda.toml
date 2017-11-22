@@ -7,7 +7,7 @@ env = "production"
 [log]
 # Log Level
 # enum: debug, info, warn, error, fatal, panic
-level = "info"
+level = "debug"
 
 # Log path
 # string
