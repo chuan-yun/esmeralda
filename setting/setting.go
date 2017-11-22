@@ -16,6 +16,7 @@ var Settings struct {
 func Initialize(configFilePath string) {
 	ReadConfigFile(configFilePath)
 	LogInitialize()
+	ValidateWebSettings()
 }
 
 func ReadConfigFile(configFilePath string) {

@@ -31,8 +31,8 @@ func LogInitialize() {
 	logrus.SetLevel(level)
 
 	logrus.WithFields(logrus.Fields{
-		"formatter": "JSONFormatter",
-		"path":      Settings.Log.Path,
-		"level":     level,
+		"log.formatter": "JSONFormatter",
+		"log.path":      Settings.Log.Path,
+		"log.level":     Settings.Log.Level,
 	}).Info("logger init")
 }
