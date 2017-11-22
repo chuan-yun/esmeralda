@@ -79,39 +79,6 @@ func main() {
 
 	runtime.GOMAXPROCS(runtime.NumCPU())
 
-	var collectorCmd = &cobra.Command{
-		Use:   "collector",
-		Short: "Hugo is a very fast static site generator",
-		Long: `A Fast and Flexible Static Site Generator built with
-					  love by spf13 and friends in Go.
-					  Complete documentation is available at http://hugo.spf13.com`,
-		Run: func(cmd *cobra.Command, args []string) {
-			fmt.Println(util.Message("collectorCmd"))
-		},
-	}
-
-	var transferCmd = &cobra.Command{
-		Use:   "transfer",
-		Short: "Hugo is a very fast static site generator",
-		Long: `A Fast and Flexible Static Site Generator built with
-					  love by spf13 and friends in Go.
-					  Complete documentation is available at http://hugo.spf13.com`,
-		Run: func(cmd *cobra.Command, args []string) {
-			fmt.Println(util.Message("transferCmd"))
-		},
-	}
-
-	var apiCmd = &cobra.Command{
-		Use:   "api",
-		Short: "Hugo is a very fast static site generator",
-		Long: `A Fast and Flexible Static Site Generator built with
-					  love by spf13 and friends in Go.
-					  Complete documentation is available at http://hugo.spf13.com`,
-		Run: func(cmd *cobra.Command, args []string) {
-			fmt.Println(util.Message("apiCmd"))
-		},
-	}
-
 	var versionCmd = &cobra.Command{
 		Use:   "version",
 		Short: "Print the version",
@@ -132,7 +99,6 @@ func main() {
 		Run: func(cmd *cobra.Command, args []string) {
 			fmt.Println("Hello, World!")
 		},
-		Aliases: []string{"collector", "transfer", "api"},
 	}
 
 	flags := rootCommand.Flags()
