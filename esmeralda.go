@@ -11,6 +11,7 @@ import (
 	"runtime/trace"
 
 	"chuanyun.io/esmeralda/util"
+	"chuanyun.io/quasimodo/config"
 
 	"golang.org/x/sync/errgroup"
 
@@ -63,7 +64,7 @@ func (this *EsmeraldaServerImpl) Shutdown(code int, reason string) {
 }
 
 func printVersionInfo() {
-	fmt.Println("esmeralda")
+	fmt.Println(filepath.Base(os.Args[0]))
 	fmt.Println("commit: " + commit + ", build: " + buildstamp)
 	fmt.Println("Copyright (c) 2017, chuanyun.io. All rights reserved.")
 }
@@ -107,19 +108,19 @@ func main() {
 	server.Start()
 }
 
-func exporter() {
+func exporter(port int64, prefix string) {
 	http.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
 		w.Write([]byte(`
 		<html>
-			<head><title>Chuanyun Quasimodo Exporter</title></head>
+			<head><title>Metrics Exporter</title></head>
 			<body>
-				<h1>Chuanyun Quasimodo Exporter</h1>
-				<p><a href="/metrics">Metrics</a></p>
+				<h1>Metrics Exporter</h1>
+				<p><a href="./metrics">Metrics</a></p>
 			</body>
 		</html>`))
 	})
 	http.Handle("/metrics", promhttp.Handler())
-	// logrus.Fatal(http.ListenAndServe(":"+config.Config.Prometheus.Port, nil))
+	logrus.Fatal(http.ListenAndServe(":"+config.Config.Prometheus.Port, nil))
 }
 
 func log() {
@@ -150,14 +151,12 @@ func log() {
 	logrus.Debug("Hello World!")
 }
 
-func Config(in string) {
+func readConfigFile(in string) {
 	in, err := filepath.Abs(filepath.Clean(in))
 	if err != nil {
 		panic(util.Message(err.Error()))
 	}
 
-	viper.SetEnvPrefix("esmeralda")
-	viper.AutomaticEnv()
 	viper.SetConfigFile(in)
 	viper.SetConfigType("toml")
 
@@ -171,4 +170,8 @@ func Config(in string) {
 			"filename": e.Name,
 		}).Info("Config file changed:")
 	})
+
+	for true {
+
+	}
 }

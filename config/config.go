@@ -12,6 +12,10 @@ var Esmeralda struct {
 		Port   int64
 		Prefix string
 	}
+	Exporter struct {
+		Port   int64
+		Prefix string
+	}
 }
 
 // func Initialize(configFilePath string) {
