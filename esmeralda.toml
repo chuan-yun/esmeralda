@@ -22,6 +22,10 @@ port = 10101
 # string
 prefix = ""
 
+# schema
+# enum: http
+schema = "http"
+
 
 [mysql]
 # Data Source Name
