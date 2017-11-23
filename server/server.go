@@ -98,8 +98,10 @@ func (this *HttpServer) Start(ctx context.Context) error {
 	listenAddr := fmt.Sprintf("%s:%s", "", strconv.FormatInt(setting.Settings.Web.Port, 10))
 
 	router := httprouter.New()
-	router.GET("/", controller.Index)
-	router.Handler("GET", "/metrics", promhttp.Handler())
+	router.GET(setting.Settings.Web.Prefix+"/", controller.Index)
+	router.GET(setting.Settings.Web.Prefix+"/collector/log", controller.Collect)
+
+	router.Handler("GET", setting.Settings.Web.Prefix+"/exporter/metrics", promhttp.Handler())
 
 	this.httpSrv = &http.Server{Addr: listenAddr, Handler: router}
 
