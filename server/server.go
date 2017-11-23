@@ -83,6 +83,20 @@ func (this *EsmeraldaServerImpl) Shutdown(code int, reason string) {
 	logrus.Exit(code)
 }
 
+func (this *EsmeraldaServerImpl) startHttpServer() {
+
+	this.httpServer = NewHttpServer()
+	err := this.httpServer.Start(this.context)
+
+	if err != nil {
+		logrus.WithFields(logrus.Fields{
+			"error": err,
+		}).Error("Fail to start server")
+		this.Shutdown(1, "Startup failed")
+		return
+	}
+}
+
 type HttpServer struct {
 	context context.Context
 	httpSrv *http.Server
@@ -109,20 +123,6 @@ func (this *HttpServer) Start(ctx context.Context) error {
 
 func (this *HttpServer) Shutdown(ctx context.Context) error {
 	return this.httpSrv.Shutdown(ctx)
-}
-
-func (this *EsmeraldaServerImpl) startHttpServer() {
-
-	this.httpServer = NewHttpServer()
-	err := this.httpServer.Start(this.context)
-
-	if err != nil {
-		logrus.WithFields(logrus.Fields{
-			"error": err,
-		}).Error("Fail to start server")
-		this.Shutdown(1, "Startup failed")
-		return
-	}
 }
 
 func listenToSystemSignals(server Server) {
