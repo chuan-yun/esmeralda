@@ -8,16 +8,12 @@ import (
 	"os"
 	"os/signal"
 	"runtime/trace"
-	"strconv"
 	"syscall"
 
 	"github.com/julienschmidt/httprouter"
-	"github.com/prometheus/client_golang/prometheus/promhttp"
 	"github.com/sirupsen/logrus"
 
 	"chuanyun.io/esmeralda/setting"
-	"chuanyun.io/esmeralda/util"
-	"chuanyun.io/quasimodo/config"
 	"golang.org/x/sync/errgroup"
 )
 
@@ -61,14 +57,19 @@ func (this *EsmeraldaServerImpl) Start() {
 
 	setting.Initialize(*configFilePath)
 
-	router := httprouter.New()
-	router.GET(setting.Settings.Web.Prefix+"/", Index)
-	router.GET(setting.Settings.Web.Prefix+"/hello/:name", Hello)
-	panic(http.ListenAndServe(":"+strconv.FormatInt(setting.Settings.Web.Port, 10), router))
+	this.startHttpServer()
 }
 
 func (this *EsmeraldaServerImpl) Shutdown(code int, reason string) {
-	logrus.Info(util.Message("Shutdown server started"))
+	logrus.Info("Shutdown server started")
+
+	this.shutdownFn()
+	this.childRoutines.Wait()
+
+	logrus.WithFields(logrus.Fields{
+		"reason": reason,
+	}).Info("Shutdown server completed")
+
 	logrus.Exit(code)
 }
 
@@ -103,17 +104,17 @@ func listenToSystemSignals(server Server) {
 	}
 }
 
-func exporter(port int64, prefix string) {
-	http.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
-		w.Write([]byte(`
-		<html>
-			<head><title>Metrics Exporter</title></head>
-			<body>
-				<h1>Metrics Exporter</h1>
-				<p><a href="./metrics">Metrics</a></p>
-			</body>
-		</html>`))
-	})
-	http.Handle("/metrics", promhttp.Handler())
-	logrus.Fatal(http.ListenAndServe(":"+config.Config.Prometheus.Port, nil))
-}
+// func exporter(port int64, prefix string) {
+// 	http.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
+// 		w.Write([]byte(`
+// 		<html>
+// 			<head><title>Metrics Exporter</title></head>
+// 			<body>
+// 				<h1>Metrics Exporter</h1>
+// 				<p><a href="./metrics">Metrics</a></p>
+// 			</body>
+// 		</html>`))
+// 	})
+// 	http.Handle("/metrics", promhttp.Handler())
+// 	logrus.Fatal(http.ListenAndServe(":"+config.Config.Prometheus.Port, nil))
+// }
