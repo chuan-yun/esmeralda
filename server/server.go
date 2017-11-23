@@ -15,6 +15,7 @@ import (
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 	"github.com/sirupsen/logrus"
 
+	"chuanyun.io/esmeralda/controller"
 	"chuanyun.io/esmeralda/setting"
 	"golang.org/x/sync/errgroup"
 )
@@ -44,21 +45,6 @@ func NewServer() Server {
 		shutdownFn:    shutdownFn,
 		childRoutines: childRoutines,
 	}
-}
-
-func Index(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
-	w.Write([]byte(`
-		<html>
-			<head><title>Metrics Exporter</title></head>
-			<body>
-				<h1>Metrics Exporter</h1>
-				<p><a href="./metrics">Metrics</a></p>
-			</body>
-		</html>`))
-}
-
-func Hello(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
-	fmt.Fprintf(w, "hello, %s!\n", ps.ByName("name"))
 }
 
 func (this *EsmeraldaServerImpl) Start() {
@@ -112,8 +98,7 @@ func (this *HttpServer) Start(ctx context.Context) error {
 	listenAddr := fmt.Sprintf("%s:%s", "", strconv.FormatInt(setting.Settings.Web.Port, 10))
 
 	router := httprouter.New()
-	router.GET("/", Index)
-	router.GET("/hello/:name", Hello)
+	router.GET("/", controller.Index)
 	router.Handler("GET", "/metrics", promhttp.Handler())
 
 	this.httpSrv = &http.Server{Addr: listenAddr, Handler: router}
