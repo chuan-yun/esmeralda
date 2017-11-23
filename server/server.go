@@ -8,9 +8,11 @@ import (
 	"os"
 	"os/signal"
 	"runtime/trace"
+	"strconv"
 	"syscall"
 
 	"github.com/julienschmidt/httprouter"
+	"github.com/prometheus/client_golang/prometheus/promhttp"
 	"github.com/sirupsen/logrus"
 
 	"chuanyun.io/esmeralda/setting"
@@ -30,6 +32,7 @@ type EsmeraldaServerImpl struct {
 	context       context.Context
 	shutdownFn    context.CancelFunc
 	childRoutines *errgroup.Group
+	httpServer    *HttpServer
 }
 
 func NewEsmeraldaServer() Server {
@@ -44,7 +47,14 @@ func NewEsmeraldaServer() Server {
 }
 
 func Index(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
-	fmt.Fprint(w, "Welcome!\n")
+	w.Write([]byte(`
+		<html>
+			<head><title>Metrics Exporter</title></head>
+			<body>
+				<h1>Metrics Exporter</h1>
+				<p><a href="./metrics">Metrics</a></p>
+			</body>
+		</html>`))
 }
 
 func Hello(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
@@ -73,17 +83,46 @@ func (this *EsmeraldaServerImpl) Shutdown(code int, reason string) {
 	logrus.Exit(code)
 }
 
+type HttpServer struct {
+	context context.Context
+	httpSrv *http.Server
+}
+
+func NewHttpServer() *HttpServer {
+	return &HttpServer{}
+}
+
+func (this *HttpServer) Start(ctx context.Context) error {
+	this.context = ctx
+
+	listenAddr := fmt.Sprintf("%s:%s", "", strconv.FormatInt(setting.Settings.Web.Port, 10))
+
+	router := httprouter.New()
+	router.GET("/", Index)
+	router.GET("/hello/:name", Hello)
+	router.Handler("GET", "/metrics", promhttp.Handler())
+
+	this.httpSrv = &http.Server{Addr: listenAddr, Handler: router}
+
+	return this.httpSrv.ListenAndServe()
+}
+
+func (this *HttpServer) Shutdown(ctx context.Context) error {
+	return this.httpSrv.Shutdown(ctx)
+}
+
 func (this *EsmeraldaServerImpl) startHttpServer() {
 
-	// g.httpServer = api.NewHttpServer()
+	this.httpServer = NewHttpServer()
+	err := this.httpServer.Start(this.context)
 
-	// err := g.httpServer.Start(g.context)
-
-	// if err != nil {
-	// 	g.log.Error("Fail to start server", "error", err)
-	// 	g.Shutdown(1, "Startup failed")
-	// 	return
-	// }
+	if err != nil {
+		logrus.WithFields(logrus.Fields{
+			"error": err,
+		}).Error("Fail to start server")
+		this.Shutdown(1, "Startup failed")
+		return
+	}
 }
 
 func listenToSystemSignals(server Server) {
@@ -103,18 +142,3 @@ func listenToSystemSignals(server Server) {
 		server.Shutdown(code, "startup error")
 	}
 }
-
-// func exporter(port int64, prefix string) {
-// 	http.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
-// 		w.Write([]byte(`
-// 		<html>
-// 			<head><title>Metrics Exporter</title></head>
-// 			<body>
-// 				<h1>Metrics Exporter</h1>
-// 				<p><a href="./metrics">Metrics</a></p>
-// 			</body>
-// 		</html>`))
-// 	})
-// 	http.Handle("/metrics", promhttp.Handler())
-// 	logrus.Fatal(http.ListenAndServe(":"+config.Config.Prometheus.Port, nil))
-// }
