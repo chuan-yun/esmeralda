@@ -24,12 +24,6 @@ var (
 	profilingPort     = flag.Int("pprof.port", 11011, "Define custom port for pprof profiling")
 )
 
-func printVersionInfo() {
-	fmt.Println(filepath.Base(os.Args[0]))
-	fmt.Println("commit: " + commit + ", build: " + buildstamp)
-	fmt.Println("Copyright (c) 2017, chuanyun.io. All rights reserved.")
-}
-
 func main() {
 
 	runtime.GOMAXPROCS(runtime.NumCPU())
@@ -37,7 +31,9 @@ func main() {
 	flag.Parse()
 
 	if *isShowVersionInfo {
-		printVersionInfo()
+		fmt.Println(filepath.Base(os.Args[0]))
+		fmt.Println("commit: " + commit + ", build: " + buildstamp)
+		fmt.Println("Copyright (c) 2017, chuanyun.io. All rights reserved.")
 		os.Exit(0)
 	}
 
