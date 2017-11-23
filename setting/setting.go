@@ -8,9 +8,10 @@ import (
 )
 
 var Settings struct {
-	Log         LogSettings
-	Web         WebSettings
-	Application ApplicationSettings
+	Log           LogSettings
+	Web           WebSettings
+	Application   ApplicationSettings
+	Elasticsearch ElasticsearchSettings
 }
 
 func Initialize(configFilePath string) {

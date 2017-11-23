@@ -8,5 +8,8 @@ const (
 )
 
 type ApplicationSettings struct {
-	Env string
+	Env      string
+	Username string
+	Password string
+	Bulk     int64
 }
