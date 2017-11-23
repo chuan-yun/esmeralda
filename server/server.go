@@ -17,6 +17,7 @@ import (
 
 	"chuanyun.io/esmeralda/controller"
 	"chuanyun.io/esmeralda/setting"
+	"chuanyun.io/esmeralda/util"
 	"golang.org/x/sync/errgroup"
 )
 
@@ -57,7 +58,7 @@ func (this *EsmeraldaServerImpl) Start() {
 }
 
 func (this *EsmeraldaServerImpl) Shutdown(code int, reason string) {
-	logrus.Info("Shutdown server started")
+	logrus.Info(util.Message("Shutdown server started"))
 
 	this.shutdownFn()
 	this.childRoutines.Wait()
