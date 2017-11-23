@@ -35,7 +35,7 @@ type EsmeraldaServerImpl struct {
 	httpServer    *HttpServer
 }
 
-func NewEsmeraldaServer() Server {
+func NewServer() Server {
 	rootCtx, shutdownFn := context.WithCancel(context.Background())
 	childRoutines, childCtx := errgroup.WithContext(rootCtx)
 
