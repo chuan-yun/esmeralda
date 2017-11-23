@@ -3,6 +3,7 @@ package setting
 import (
 	"fmt"
 	"os"
+	"path/filepath"
 
 	"chuanyun.io/esmeralda/util"
 	"github.com/sirupsen/logrus"
@@ -16,6 +17,13 @@ type LogSettings struct {
 func LogInitialize() {
 
 	logrus.SetFormatter(&logrus.JSONFormatter{})
+
+	logPath, err := filepath.Abs(Settings.Log.Path)
+	if err != nil {
+		panic(util.Message(err.Error()))
+	}
+
+	Settings.Log.Path = logPath
 
 	logFile, err := os.OpenFile(Settings.Log.Path, os.O_CREATE|os.O_APPEND|os.O_WRONLY, 0666)
 	if err != nil {

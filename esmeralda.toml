@@ -11,7 +11,7 @@ level = "debug"
 
 # Log path
 # string
-path = "D:/Workspace/gopath/src/chuanyun.io/esmeralda/esmeralda.log"
+path = "esmeralda.log"
 
 
 [web]
