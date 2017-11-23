@@ -23,6 +23,11 @@ func LogInitialize() {
 	}
 	logrus.SetOutput(logFile)
 
+	handler := func() {
+		logFile.Close()
+	}
+	logrus.RegisterExitHandler(handler)
+
 	level, err := logrus.ParseLevel(Settings.Log.Level)
 	if err != nil {
 		level = logrus.InfoLevel

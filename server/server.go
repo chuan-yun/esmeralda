@@ -16,6 +16,7 @@ import (
 	"github.com/sirupsen/logrus"
 
 	"chuanyun.io/esmeralda/setting"
+	"chuanyun.io/esmeralda/util"
 	"chuanyun.io/quasimodo/config"
 	"golang.org/x/sync/errgroup"
 )
@@ -56,17 +57,32 @@ func Hello(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
 
 func (this *EsmeraldaServerImpl) Start() {
 
+	go listenToSystemSignals(this)
+
 	setting.Initialize(*configFilePath)
 
 	router := httprouter.New()
 	router.GET(setting.Settings.Web.Prefix+"/", Index)
 	router.GET(setting.Settings.Web.Prefix+"/hello/:name", Hello)
-	http.Handle(setting.Settings.Web.Prefix+"/metrics", promhttp.Handler())
 	panic(http.ListenAndServe(":"+strconv.FormatInt(setting.Settings.Web.Port, 10), router))
-
 }
 
 func (this *EsmeraldaServerImpl) Shutdown(code int, reason string) {
+	logrus.Info(util.Message("Shutdown server started"))
+	logrus.Exit(code)
+}
+
+func (this *EsmeraldaServerImpl) startHttpServer() {
+
+	// g.httpServer = api.NewHttpServer()
+
+	// err := g.httpServer.Start(g.context)
+
+	// if err != nil {
+	// 	g.log.Error("Fail to start server", "error", err)
+	// 	g.Shutdown(1, "Startup failed")
+	// 	return
+	// }
 }
 
 func listenToSystemSignals(server Server) {
