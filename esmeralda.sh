@@ -24,6 +24,7 @@ CONFIG_FILE_PATH=./esmeralda.toml
 start() {
     echo -n $"Starting $PROGNAME: "
 
+    touch ${PIDFILE}
     daemon --pidfile=${PIDFILE} "$PROG -config=$CONFIG_FILE_PATH -pprof=true -pprof.port=10201 &"
     RETVAL=$?
     echo
