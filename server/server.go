@@ -142,10 +142,9 @@ func (me *HttpServer) Start(ctx context.Context) (err error) {
 	listenAddr := fmt.Sprintf("%s:%s", setting.Settings.Web.Address, strconv.FormatInt(setting.Settings.Web.Port, 10))
 
 	router := httprouter.New()
-	router.GET(setting.Settings.Web.Prefix+"/", controller.Index)
 	router.GET(setting.Settings.Web.Prefix+"/collector/log", controller.Collect)
 
-	router.Handler("GET", setting.Settings.Web.Prefix+"/exporter/metrics", promhttp.Handler())
+	router.Handler("GET", setting.Settings.Web.Prefix+"/metrics", promhttp.Handler())
 
 	me.httpSrv = &http.Server{Addr: listenAddr, Handler: router}
 
