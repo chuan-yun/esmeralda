@@ -3,6 +3,7 @@ package setting
 import (
 	"path/filepath"
 
+	"github.com/fsnotify/fsnotify"
 	"github.com/sirupsen/logrus"
 
 	"chuanyun.io/esmeralda/util"
@@ -47,4 +48,8 @@ func ReadConfigFile(configFilePath string) {
 	}
 
 	Settings.ConfigFilePath = configFilePath
+
+	viper.OnConfigChange(func(e fsnotify.Event) {
+		Initialize(Settings.ConfigFilePath)
+	})
 }
