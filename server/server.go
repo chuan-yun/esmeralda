@@ -60,6 +60,7 @@ func (me *EsmeraldaServerImpl) Start() {
 
 	me.writePIDFile()
 	me.startHttpServer()
+	logrus.Info("============================================")
 }
 
 func (me *EsmeraldaServerImpl) Shutdown(code int, reason string) {
@@ -157,7 +158,8 @@ func (me *HttpServer) Start(ctx context.Context) (err error) {
 
 	if err == nil {
 		logrus.WithFields(logrus.Fields{
-			"listen": listenAddr,
+			"listen":   listenAddr,
+			"exporter": listenAddr + setting.Settings.Web.Prefix + "/metrics",
 		}).Info("Startup http server success")
 	}
 
