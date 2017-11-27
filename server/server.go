@@ -153,13 +153,13 @@ func (me *HttpServer) Start(ctx context.Context) (err error) {
 	case setting.HTTP:
 		err = me.httpSrv.ListenAndServe()
 	default:
-		err = errors.New("Invalid Protocol")
+		err = errors.New("Invalid web scheme")
 	}
 
 	if err == nil {
 		logrus.WithFields(logrus.Fields{
 			"listen": listenAddr,
-		}).Error("Startup http server success")
+		}).Info("Startup http server success")
 	}
 
 	return err
