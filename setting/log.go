@@ -17,7 +17,7 @@ type LogSettings struct {
 func LogInitialize() {
 
 	if !filepath.IsAbs(Settings.Log.Path) {
-		Settings.Log.Path = filepath.Base(os.Args[0]) + Settings.Log.Path
+		Settings.Log.Path = filepath.Dir(os.Args[0]) + Settings.Log.Path
 	}
 
 	logPath, err := filepath.Abs(filepath.Clean(Settings.Log.Path))

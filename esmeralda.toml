@@ -11,7 +11,7 @@ level = "debug"
 
 # Log path
 # string
-path = "log/esmeralda.log"
+path = "esmeralda.log"
 
 
 [web]

@@ -12,7 +12,7 @@
 . /etc/rc.d/init.d/functions
 
 PROGHOME=./target
-PROG=${PROGHOME}/bin/esmeralda
+PROG=${PROGHOME}/esmeralda
 
 PROGNAME=`/bin/basename $PROG`
 
