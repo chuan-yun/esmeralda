@@ -125,8 +125,6 @@ func (me *EsmeraldaServerImpl) startHttpServer() {
 
 		return
 	}
-
-	logrus.Info(util.Message("Startup http server success"))
 }
 
 type HttpServer struct {
@@ -138,7 +136,7 @@ func NewHttpServer() *HttpServer {
 	return &HttpServer{}
 }
 
-func (me *HttpServer) Start(ctx context.Context) error {
+func (me *HttpServer) Start(ctx context.Context) (err error) {
 	me.context = ctx
 
 	listenAddr := fmt.Sprintf("%s:%s", setting.Settings.Web.Address, strconv.FormatInt(setting.Settings.Web.Port, 10))
@@ -153,10 +151,18 @@ func (me *HttpServer) Start(ctx context.Context) error {
 
 	switch setting.Settings.Web.Schema {
 	case setting.HTTP:
-		return me.httpSrv.ListenAndServe()
+		err = me.httpSrv.ListenAndServe()
 	default:
-		return errors.New("Invalid Protocol")
+		err = errors.New("Invalid Protocol")
 	}
+
+	if err == nil {
+		logrus.WithFields(logrus.Fields{
+			"listen": listenAddr,
+		}).Error("Startup http server success")
+	}
+
+	return err
 }
 
 func (me *HttpServer) Shutdown(ctx context.Context) error {
