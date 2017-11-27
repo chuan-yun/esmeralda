@@ -26,7 +26,7 @@ start() {
 
     daemon --pidfile=${PIDFILE} "$PROG -config=$CONFIG_FILE_PATH -pprof=true -pprof.port=10201 &"
     RETVAL=$?
-    pid=`ps -A | grep $NAME | cut -d" " -f2`
+    pid=`ps -A | grep $PROGNAME | cut -d" " -f2`
     pid=`echo $pid | cut -d" " -f2`
     if [ -n "$pid" ]; then
             echo $pid > "$PIDFILE"
