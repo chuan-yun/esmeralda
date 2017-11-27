@@ -4,9 +4,11 @@ import (
 	"context"
 	"flag"
 	"fmt"
+	"io/ioutil"
 	"net/http"
 	"os"
 	"os/signal"
+	"path/filepath"
 	"runtime/trace"
 	"strconv"
 	"syscall"
@@ -24,6 +26,7 @@ import (
 var exitChan = make(chan int)
 
 var configFilePath = flag.String("config", "/etc/chuanyun/esmeralda.toml", "config file path")
+var pidFile = flag.String("pidfile", "", "path to pid file")
 
 type Server interface {
 	Start()
@@ -48,38 +51,76 @@ func NewEsmeraldaServer() Server {
 	}
 }
 
-func (this *EsmeraldaServerImpl) Start() {
+func (me *EsmeraldaServerImpl) Start() {
 
-	go listenToSystemSignals(this)
+	go listenToSystemSignals(me)
 
 	setting.Initialize(*configFilePath)
 
-	this.startHttpServer()
+	me.writePIDFile()
+	me.startHttpServer()
 }
 
-func (this *EsmeraldaServerImpl) Shutdown(code int, reason string) {
-	logrus.Info(util.Message("Shutdown server started"))
+func (me *EsmeraldaServerImpl) Shutdown(code int, reason string) {
+	logrus.WithFields(logrus.Fields{
+		"code":   code,
+		"reason": reason,
+	}).Info(util.Message("Shutdown server started"))
 
-	this.shutdownFn()
-	this.childRoutines.Wait()
+	err := me.httpServer.Shutdown(me.context)
+	if err != nil {
+		logrus.WithFields(logrus.Fields{
+			"error": err,
+		}).Error(util.Message("Failed to shutdown http server"))
+	}
+
+	me.shutdownFn()
+	err = me.childRoutines.Wait()
 
 	logrus.WithFields(logrus.Fields{
 		"reason": reason,
+		"error":  err,
 	}).Info("Shutdown server completed")
 
+	// logrus.Exit(code) will call os.Exit(code)
 	logrus.Exit(code)
 }
 
-func (this *EsmeraldaServerImpl) startHttpServer() {
+func (me *EsmeraldaServerImpl) writePIDFile() {
+	if *pidFile == "" {
+		return
+	}
 
-	this.httpServer = NewHttpServer()
-	err := this.httpServer.Start(this.context)
+	err := os.MkdirAll(filepath.Dir(*pidFile), 0775)
+	if err != nil {
+		logrus.WithFields(logrus.Fields{
+			"error": err,
+		}).Fatal(util.Message("Failed to verify pid directory"))
+	}
+
+	pid := strconv.Itoa(os.Getpid())
+	if err := ioutil.WriteFile(*pidFile, []byte(pid), 0644); err != nil {
+		logrus.WithFields(logrus.Fields{
+			"error": err,
+		}).Fatal(util.Message("Failed to write pidfile"))
+	}
+
+	logrus.WithFields(logrus.Fields{
+		"path": *pidFile,
+		"pid":  pid,
+	}).Info("Writing PID file")
+}
+
+func (me *EsmeraldaServerImpl) startHttpServer() {
+
+	me.httpServer = NewHttpServer()
+	err := me.httpServer.Start(me.context)
 
 	if err != nil {
 		logrus.WithFields(logrus.Fields{
 			"error": err,
 		}).Error(util.Message("Fail to start http server"))
-		this.Shutdown(1, "Startup http server failed")
+		me.Shutdown(1, "Startup http server failed")
 
 		return
 	}
@@ -96,8 +137,8 @@ func NewHttpServer() *HttpServer {
 	return &HttpServer{}
 }
 
-func (this *HttpServer) Start(ctx context.Context) error {
-	this.context = ctx
+func (me *HttpServer) Start(ctx context.Context) error {
+	me.context = ctx
 
 	listenAddr := fmt.Sprintf("%s:%s", "", strconv.FormatInt(setting.Settings.Web.Port, 10))
 
@@ -107,13 +148,13 @@ func (this *HttpServer) Start(ctx context.Context) error {
 
 	router.Handler("GET", setting.Settings.Web.Prefix+"/exporter/metrics", promhttp.Handler())
 
-	this.httpSrv = &http.Server{Addr: listenAddr, Handler: router}
+	me.httpSrv = &http.Server{Addr: listenAddr, Handler: router}
 
-	return this.httpSrv.ListenAndServe()
+	return me.httpSrv.ListenAndServe()
 }
 
-func (this *HttpServer) Shutdown(ctx context.Context) error {
-	return this.httpSrv.Shutdown(ctx)
+func (me *HttpServer) Shutdown(ctx context.Context) error {
+	return me.httpSrv.Shutdown(ctx)
 }
 
 func listenToSystemSignals(server Server) {
