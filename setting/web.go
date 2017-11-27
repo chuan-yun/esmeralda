@@ -19,7 +19,7 @@ type WebSettings struct {
 	Port    int64
 	Address string
 	Prefix  string
-	Schema  string
+	Schema  Scheme
 }
 
 func ValidateWebSettings() {
