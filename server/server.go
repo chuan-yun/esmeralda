@@ -72,7 +72,7 @@ func (me *EsmeraldaServerImpl) Shutdown(code int, reason string) {
 	if err != nil {
 		logrus.WithFields(logrus.Fields{
 			"error": err,
-		}).Error(util.Message("Failed to shutdown http server"))
+		}).Error("Failed to shutdown http server")
 	}
 
 	me.shutdownFn()
@@ -118,9 +118,6 @@ func (me *EsmeraldaServerImpl) startHttpServer() {
 	err := me.httpServer.Start(me.context)
 
 	if err != nil {
-		logrus.WithFields(logrus.Fields{
-			"error": err,
-		}).Error(util.Message("Fail to start http server"))
 		me.Shutdown(1, "Startup http server failed")
 
 		return
@@ -164,11 +161,21 @@ func (me *HttpServer) Start(ctx context.Context) (err error) {
 		err = errors.New("Invalid web scheme")
 	}
 
+	logrus.WithFields(logrus.Fields{
+		"error": err,
+	}).Error(util.Message("Fail to start http server"))
+
 	return err
 }
 
 func (me *HttpServer) Shutdown(ctx context.Context) error {
-	return me.httpSrv.Shutdown(ctx)
+	err := me.httpSrv.Shutdown(ctx)
+
+	logrus.WithFields(logrus.Fields{
+		"error": err,
+	}).Error(util.Message("Fail to shutdown http server"))
+
+	return err
 }
 
 func listenToSystemSignals(server Server) {
