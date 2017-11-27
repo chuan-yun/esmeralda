@@ -16,12 +16,21 @@ type LogSettings struct {
 
 func LogInitialize() {
 
-	logPath, err := filepath.Abs(Settings.Log.Path)
+	if !filepath.IsAbs(Settings.Log.Path) {
+		Settings.Log.Path = filepath.Base(os.Args[0]) + Settings.Log.Path
+	}
+
+	logPath, err := filepath.Abs(filepath.Clean(Settings.Log.Path))
 	if err != nil {
 		panic(util.Message(err.Error()))
 	}
 
 	Settings.Log.Path = logPath
+
+	err = os.MkdirAll(filepath.Dir(Settings.Log.Path), 0755)
+	if err != nil {
+		panic(util.Message(err.Error()))
+	}
 
 	logFile, err := os.OpenFile(Settings.Log.Path, os.O_CREATE|os.O_APPEND|os.O_WRONLY, 0666)
 	if err != nil {
