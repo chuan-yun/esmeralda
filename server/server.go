@@ -2,6 +2,7 @@ package server
 
 import (
 	"context"
+	"errors"
 	"flag"
 	"fmt"
 	"io/ioutil"
@@ -150,7 +151,12 @@ func (me *HttpServer) Start(ctx context.Context) error {
 
 	me.httpSrv = &http.Server{Addr: listenAddr, Handler: router}
 
-	return me.httpSrv.ListenAndServe()
+	switch setting.Settings.Web.Schema {
+	case setting.HTTP:
+		return me.httpSrv.ListenAndServe()
+	default:
+		return errors.New("Invalid Protocol")
+	}
 }
 
 func (me *HttpServer) Shutdown(ctx context.Context) error {

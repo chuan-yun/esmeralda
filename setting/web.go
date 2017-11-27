@@ -8,6 +8,10 @@ import (
 	"github.com/sirupsen/logrus"
 )
 
+const (
+	HTTP Scheme = "http"
+)
+
 type WebSettings struct {
 	Port   int64
 	Prefix string
