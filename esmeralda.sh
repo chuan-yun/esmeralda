@@ -24,12 +24,8 @@ CONFIG_FILE_PATH=./esmeralda.toml
 start() {
     echo -n $"Starting $PROGNAME: "
 
-    daemon --pidfile=${PIDFILE} "$PROG -config=$CONFIG_FILE_PATH -pprof=true -pprof.port=10201 &"
+    daemon "${PROG} -config=${CONFIG_FILE_PATH} -pidfile=${PIDFILE} -pprof=true -pprof.port=10201 &"
     RETVAL=$?
-    pid=`ps -A | grep $PROGNAME | cut -d" " -f1`
-    if [ -n "$pid" ]; then
-            echo $pid > "$PIDFILE"
-    fi
     echo
     [ $RETVAL = 0 ] && touch ${LOCKFILE}
     return $RETVAL
