@@ -78,10 +78,13 @@ func (this *EsmeraldaServerImpl) startHttpServer() {
 	if err != nil {
 		logrus.WithFields(logrus.Fields{
 			"error": err,
-		}).Error("Fail to start server")
-		this.Shutdown(1, "Startup failed")
+		}).Error(util.Message("Fail to start http server"))
+		this.Shutdown(1, "Startup http server failed")
+
 		return
 	}
+
+	logrus.Info(util.Message("Startup http server success"))
 }
 
 type HttpServer struct {

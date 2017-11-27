@@ -3,20 +3,28 @@ package setting
 import (
 	"path/filepath"
 
+	"github.com/sirupsen/logrus"
+
 	"chuanyun.io/esmeralda/util"
 	"github.com/spf13/viper"
 )
 
 var Settings struct {
-	Log           LogSettings
-	Web           WebSettings
-	Application   ApplicationSettings
-	Elasticsearch ElasticsearchSettings
+	ConfigFilePath string
+	Log            LogSettings
+	Web            WebSettings
+	Application    ApplicationSettings
+	Elasticsearch  ElasticsearchSettings
 }
 
 func Initialize(configFilePath string) {
 	ReadConfigFile(configFilePath)
 	LogInitialize()
+
+	logrus.WithFields(logrus.Fields{
+		"settings": Settings,
+	}).Info("Initialize settings completed")
+
 	ValidateWebSettings()
 }
 
@@ -37,4 +45,6 @@ func ReadConfigFile(configFilePath string) {
 	if err != nil {
 		panic(util.Message(err.Error()))
 	}
+
+	Settings.ConfigFilePath = configFilePath
 }
