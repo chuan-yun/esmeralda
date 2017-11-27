@@ -60,7 +60,6 @@ func (me *EsmeraldaServerImpl) Start() {
 
 	me.writePIDFile()
 	me.startHttpServer()
-	logrus.Info("============================================")
 }
 
 func (me *EsmeraldaServerImpl) Shutdown(code int, reason string) {
@@ -147,6 +146,13 @@ func (me *HttpServer) Start(ctx context.Context) (err error) {
 
 	router.Handler("GET", setting.Settings.Web.Prefix+"/metrics", promhttp.Handler())
 
+	logrus.WithFields(logrus.Fields{
+		"address":  setting.Settings.Web.Address,
+		"port":     setting.Settings.Web.Port,
+		"schema":   setting.Settings.Web.Schema,
+		"exporter": listenAddr + setting.Settings.Web.Prefix + "/metrics",
+	}).Info("Startup http server")
+
 	me.httpSrv = &http.Server{Addr: listenAddr, Handler: router}
 
 	switch setting.Settings.Web.Schema {
@@ -154,13 +160,6 @@ func (me *HttpServer) Start(ctx context.Context) (err error) {
 		err = me.httpSrv.ListenAndServe()
 	default:
 		err = errors.New("Invalid web scheme")
-	}
-
-	if err == nil {
-		logrus.WithFields(logrus.Fields{
-			"listen":   listenAddr,
-			"exporter": listenAddr + setting.Settings.Web.Prefix + "/metrics",
-		}).Info("Startup http server success")
 	}
 
 	return err
