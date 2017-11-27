@@ -39,8 +39,13 @@ stop() {
     [ $RETVAL = 0 ] && rm -f ${LOCKFILE} ${PIDFILE}
 }
 
+rh_status() {
+    status -p ${PIDFILE} -b ${PROG} ${PROG}
+}
+
 case "$1" in
     start)
+        rh_status >/dev/null 2>&1 && exit 0
         start
         ;;
     stop)
