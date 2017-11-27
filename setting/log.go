@@ -16,8 +16,6 @@ type LogSettings struct {
 
 func LogInitialize() {
 
-	logrus.SetFormatter(&logrus.JSONFormatter{})
-
 	logPath, err := filepath.Abs(Settings.Log.Path)
 	if err != nil {
 		panic(util.Message(err.Error()))
@@ -31,6 +29,8 @@ func LogInitialize() {
 	}
 	logrus.SetOutput(logFile)
 
+	logrus.SetFormatter(&logrus.JSONFormatter{})
+
 	handler := func() {
 		logFile.Close()
 	}
@@ -42,6 +42,8 @@ func LogInitialize() {
 		Settings.Log.Level = fmt.Sprintf("%s", logrus.InfoLevel)
 	}
 	logrus.SetLevel(level)
+
+	logrus.Info("@@@@@@@@@@@@@@@@@@@@")
 
 	logrus.WithFields(logrus.Fields{
 		"log.formatter": "JSONFormatter",
