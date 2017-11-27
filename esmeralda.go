@@ -61,6 +61,6 @@ func main() {
 		defer trace.Stop()
 	}
 
-	server := server.NewServer()
+	server := server.NewEsmeraldaServer()
 	server.Start()
 }
