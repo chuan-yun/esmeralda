@@ -44,7 +44,7 @@ staticcheck: $(STATICCHECK)
 
 build: 
 	@echo ">> building binaries"
-	@$(GO) build ${LDFLAGS} -o $(CURDIR)/target/bin/${BINARY}
+	@$(GO) build ${LDFLAGS} -o $(CURDIR)/target/${BINARY}
 
 test:
 	@echo ">> running tests"
