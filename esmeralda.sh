@@ -11,10 +11,10 @@
 # Source function library.
 . /etc/rc.d/init.d/functions
 
-PROGHOME=./target
+PROGHOME=${PWD}/target
 PROG=${PROGHOME}/esmeralda
 
-PROGNAME=`/bin/basename $PROG`
+PROGNAME=${PROG##*/}
 
 LOCKFILE=${PROGHOME}/$PROGNAME.lock
 PIDFILE=${PROGHOME}/$PROGNAME.pid
