@@ -8,19 +8,23 @@ import (
 	"github.com/sirupsen/logrus"
 )
 
+type Scheme string
+
 const (
-	HTTP Scheme = "http"
+	HTTP              Scheme = "http"
+	DEFAULT_HTTP_ADDR string = "0.0.0.0"
 )
 
 type WebSettings struct {
-	Port   int64
-	Prefix string
-	Schema string
+	Port    int64
+	Address string
+	Prefix  string
+	Schema  string
 }
 
 func ValidateWebSettings() {
 
-	u, err := url.Parse("http://localhost/" + Settings.Web.Prefix)
+	u, err := url.Parse("http://" + DEFAULT_HTTP_ADDR + "/" + Settings.Web.Prefix)
 	if err != nil {
 		logrus.Fatal(util.Message("Web prefix path error"))
 	}

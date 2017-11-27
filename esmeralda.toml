@@ -15,6 +15,10 @@ path = "esmeralda.log"
 
 
 [web]
+# http address
+# string: 0.0.0.0(default)
+address = "0.0.0.0"
+
 # http Port
 # int: 10101(default)
 port = 10101

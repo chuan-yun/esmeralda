@@ -141,7 +141,7 @@ func NewHttpServer() *HttpServer {
 func (me *HttpServer) Start(ctx context.Context) error {
 	me.context = ctx
 
-	listenAddr := fmt.Sprintf("%s:%s", "", strconv.FormatInt(setting.Settings.Web.Port, 10))
+	listenAddr := fmt.Sprintf("%s:%s", setting.Settings.Web.Address, strconv.FormatInt(setting.Settings.Web.Port, 10))
 
 	router := httprouter.New()
 	router.GET(setting.Settings.Web.Prefix+"/", controller.Index)
