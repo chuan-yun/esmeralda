@@ -28,9 +28,6 @@ func LogInitialize() {
 		panic(util.Message(err.Error()))
 	}
 	logrus.SetOutput(logFile)
-
-	logrus.SetFormatter(&logrus.JSONFormatter{})
-
 	handler := func() {
 		logFile.Close()
 	}
@@ -42,6 +39,8 @@ func LogInitialize() {
 		Settings.Log.Level = fmt.Sprintf("%s", logrus.InfoLevel)
 	}
 	logrus.SetLevel(level)
+
+	logrus.SetFormatter(&logrus.JSONFormatter{})
 
 	logrus.Info("@@@@@@@@@@@@@@@@@@@@")
 
