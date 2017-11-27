@@ -153,6 +153,8 @@ func (me *HttpServer) Start(ctx context.Context) (err error) {
 		"exporter": listenAddr + setting.Settings.Web.Prefix + "/metrics",
 	}).Info("Startup http server")
 
+	router.NotFound = http.HandlerFunc(controller.NotFoundHandler)
+
 	me.httpSrv = &http.Server{Addr: listenAddr, Handler: router}
 
 	switch setting.Settings.Web.Schema {
