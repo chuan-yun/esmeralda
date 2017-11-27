@@ -51,11 +51,10 @@ func LogInitialize() {
 
 	logrus.SetFormatter(&logrus.JSONFormatter{})
 
-	logrus.Info("@@@@@@@@@@@@@@@@@@@@")
-
 	logrus.WithFields(logrus.Fields{
 		"log.formatter": "JSONFormatter",
 		"log.path":      Settings.Log.Path,
 		"log.level":     Settings.Log.Level,
+		"flag":          "@@@@@@@@@@@@@@@@@@@@",
 	}).Info("logger init")
 }
