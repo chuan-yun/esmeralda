@@ -137,9 +137,9 @@ func (me *HttpServer) Start(ctx context.Context) (err error) {
 	router := httprouter.New()
 	router.GET(setting.Settings.Web.Prefix+"/collector/log", controller.Collect)
 
-	router.GET(setting.Settings.Web.Prefix+"/traces", util.Crossdomain(controller.Lists))
+	router.GET(setting.Settings.Web.Prefix+"/traces", util.CORS(controller.Lists))
 
-	router.GET(setting.Settings.Web.Prefix+"/traces/waterfall/:index/:id", util.Crossdomain(controller.Waterfall))
+	router.GET(setting.Settings.Web.Prefix+"/traces/waterfall/:index/:id", util.CORS(controller.Waterfall))
 
 	router.Handler("GET", setting.Settings.Web.Prefix+"/metrics", promhttp.Handler())
 
