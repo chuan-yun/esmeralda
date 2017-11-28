@@ -167,9 +167,11 @@ func (me *HttpServer) Start(ctx context.Context) (err error) {
 func (me *HttpServer) Shutdown(ctx context.Context) error {
 	err := me.httpSrv.Shutdown(ctx)
 
-	logrus.WithFields(logrus.Fields{
-		"error": err,
-	}).Error(util.Message("Fail to shutdown http server"))
+	if err != nil {
+		logrus.WithFields(logrus.Fields{
+			"error": err,
+		}).Error(util.Message("Fail to shutdown http server"))
+	}
 
 	return err
 }
