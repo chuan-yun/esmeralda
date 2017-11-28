@@ -35,5 +35,7 @@ func InitializeElasticClient() (err error) {
 		}).Error(util.Message("elastic client init error"))
 	}
 
+	logrus.Info(Settings.Elasticsearch.Client)
+
 	return err
 }
