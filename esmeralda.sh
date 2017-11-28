@@ -11,7 +11,7 @@
 # Source function library.
 . /etc/rc.d/init.d/functions
 
-PROGHOME=${PWD}/target
+PROGHOME=${PWD}
 PROG=${PROGHOME}/esmeralda
 
 PROGNAME=${PROG##*/}
@@ -19,7 +19,7 @@ PROGNAME=${PROG##*/}
 LOCKFILE=${PROGHOME}/$PROGNAME.lock
 PIDFILE=${PROGHOME}/$PROGNAME.pid
 
-CONFIG_FILE_PATH=./esmeralda.toml
+CONFIG_FILE_PATH=${PROGHOME}/esmeralda.toml
 
 start() {
     echo -n $"Starting $PROGNAME: "
