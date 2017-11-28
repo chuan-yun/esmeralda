@@ -18,10 +18,7 @@ BINARY  	  = esmeralda
 DATE         ?= $(shell date +%FT%T%z)
 COMMIT       ?= $(shell git describe --tags --always --dirty="-dev" --match=v* 2> /dev/null || echo v0)
 
-BUILD_TARGET  = "${target:-$(CURDIR)/target}"
-
-
-$(info, $(BUILD_TARGET))
+BUILD_TARGET  = $(CURDIR)/target
 
 LDFLAGS       = -ldflags "-X main.commit=${COMMIT} -X main.buildstamp=${DATE}"
 
