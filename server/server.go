@@ -47,6 +47,8 @@ func (me *EsmeraldaServerImpl) Start() {
 
 	setting.Initialize(*configFilePath)
 
+	setting.InitializeElasticClient()
+
 	me.writePIDFile()
 	me.startHttpServer()
 }
