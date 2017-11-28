@@ -12,6 +12,7 @@ type ElasticsearchSettings struct {
 	Poolsize int
 	Username string
 	Password string
+	Sniff    bool
 
 	Client *elastic.Client
 }
@@ -24,7 +25,7 @@ func InitializeElasticClient() (err error) {
 	}
 
 	elasticsearchOptions = append(elasticsearchOptions, elastic.SetHealthcheck(true))
-	elasticsearchOptions = append(elasticsearchOptions, elastic.SetSniff(true))
+	elasticsearchOptions = append(elasticsearchOptions, elastic.SetSniff(Settings.Elasticsearch.Sniff))
 	elasticsearchOptions = append(elasticsearchOptions, elastic.SetScheme("http"))
 
 	Settings.Elasticsearch.Client, err = elastic.NewClient(elasticsearchOptions...)
