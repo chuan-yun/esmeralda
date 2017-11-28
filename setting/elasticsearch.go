@@ -17,7 +17,7 @@ type ElasticsearchSettings struct {
 	Client *elastic.Client
 }
 
-func InitializeElasticClient() (err error) {
+func InitializeElasticClient() {
 	var elasticsearchOptions []elastic.ClientOptionFunc
 	elasticsearchOptions = append(elasticsearchOptions, elastic.SetURL(Settings.Elasticsearch.Hosts...))
 	if Settings.Elasticsearch.Username != "" && Settings.Elasticsearch.Password != "" {
@@ -28,16 +28,16 @@ func InitializeElasticClient() (err error) {
 	elasticsearchOptions = append(elasticsearchOptions, elastic.SetSniff(Settings.Elasticsearch.Sniff))
 	elasticsearchOptions = append(elasticsearchOptions, elastic.SetScheme("http"))
 
+	var err error
 	Settings.Elasticsearch.Client, err = elastic.NewClient(elasticsearchOptions...)
 	if err != nil {
 		logrus.WithFields(logrus.Fields{
 			"error": err,
-		}).Error(util.Message("Initialize elasticsearch client connections failed"))
+		}).Fatal(util.Message("Initialize elasticsearch client connections failed"))
 	} else {
 		logrus.WithFields(logrus.Fields{
 			"clients": Settings.Elasticsearch.Client,
 		}).Info("Initialize elasticsearch client connections completed")
 	}
 
-	return err
 }
