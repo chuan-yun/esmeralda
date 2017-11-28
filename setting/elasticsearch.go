@@ -1,5 +1,7 @@
 package setting
 
 type ElasticsearchSettings struct {
-	Hosts []string
+	Hosts    []string
+	Debug    bool
+	Poolsize int
 }

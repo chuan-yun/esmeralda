@@ -98,7 +98,7 @@ url = "http://localhost/api/api/search"
 [elasticsearch]
 # Elasticsearch Hosts
 # string[]
-hosts = ["http://127.0.0.1:9200", "http://10.10.10.2:9200"]
+hosts = ["http://10.209.26.171:11520", "http://10.209.26.172:11520", "http://10.209.26.198:11520", "http://10.209.26.199:11520"]
 # Elasticsearch BasicAuth Username
 # string
 username = "username"
@@ -108,3 +108,9 @@ password = "password"
 # Elasticsearch Client Bulk Size
 # int: 2000(default), 0 < bulk < 5000
 bulk = 2000
+# Enable Elasticsearch Debug
+# boolean: true/false
+debug = false
+# Elasticsearch Pool Size
+# int: 100
+poolsize = 100
