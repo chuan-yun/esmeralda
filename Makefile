@@ -18,7 +18,10 @@ BINARY  	  = esmeralda
 DATE         ?= $(shell date +%FT%T%z)
 COMMIT       ?= $(shell git describe --tags --always --dirty="-dev" --match=v* 2> /dev/null || echo v0)
 
-BUILD_TARGET  = target
+BUILD_TARGET  = "${target:-$(CURDIR)/target}"
+
+
+$(info, $(BUILD_TARGET))
 
 LDFLAGS       = -ldflags "-X main.commit=${COMMIT} -X main.buildstamp=${DATE}"
 
@@ -46,12 +49,12 @@ staticcheck: $(STATICCHECK)
 
 build: 
 	@echo ">> building binaries"
-	@$(GO) build ${LDFLAGS} -o $(CURDIR)/$(BUILD_TARGET)/${BINARY}
+	@$(GO) build ${LDFLAGS} -o $(BUILD_TARGET)/${BINARY}
 
 install: 
 	@echo ">> installing binaries"
-	@cp -f $(CURDIR)/esmeralda.sh $(CURDIR)/$(BUILD_TARGET)/esmeralda.sh
-	@cp -f $(CURDIR)/esmeralda.toml $(CURDIR)/$(BUILD_TARGET)/esmeralda.toml
+	@cp -f $(CURDIR)/esmeralda.sh $(BUILD_TARGET)/esmeralda.sh
+	@cp -f $(CURDIR)/esmeralda.toml $(BUILD_TARGET)/esmeralda.toml
 
 test:
 	@echo ">> running tests"
