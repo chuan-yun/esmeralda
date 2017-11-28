@@ -159,9 +159,11 @@ func (me *HttpServer) Start(ctx context.Context) (err error) {
 		err = errors.New("Invalid web scheme")
 	}
 
-	logrus.WithFields(logrus.Fields{
-		"error": err,
-	}).Error(util.Message("Fail to start http server"))
+	if err != nil {
+		logrus.WithFields(logrus.Fields{
+			"error": err,
+		}).Error(util.Message("Fail to start http server"))
+	}
 
 	return err
 }
