@@ -25,7 +25,7 @@ port = 10101
 
 # web path prefix
 # string
-prefix = ""
+prefix = "/"
 
 # schema
 # enum: http
