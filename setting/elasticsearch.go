@@ -31,12 +31,13 @@ func InitializeElasticClient() (err error) {
 	Settings.Elasticsearch.Client, err = elastic.NewClient(elasticsearchOptions...)
 	if err != nil {
 		logrus.WithFields(logrus.Fields{
-			"error":  err,
-			"client": Settings.Elasticsearch.Client,
-		}).Error(util.Message("elastic client init error"))
+			"error": err,
+		}).Error(util.Message("Initialize elasticsearch client connections failed"))
+	} else {
+		logrus.WithFields(logrus.Fields{
+			"clients": Settings.Elasticsearch.Client,
+		}).Info("Initialize elasticsearch client connections completed")
 	}
-
-	logrus.Info(Settings.Elasticsearch.Client)
 
 	return err
 }
