@@ -41,17 +41,6 @@ type EsmeraldaServerImpl struct {
 	httpServer    *HttpServer
 }
 
-func NewEsmeraldaServer() Server {
-	rootCtx, shutdownFn := context.WithCancel(context.Background())
-	childRoutines, childCtx := errgroup.WithContext(rootCtx)
-
-	return &EsmeraldaServerImpl{
-		context:       childCtx,
-		shutdownFn:    shutdownFn,
-		childRoutines: childRoutines,
-	}
-}
-
 func (me *EsmeraldaServerImpl) Start() {
 
 	go listenToSystemSignals(me)
@@ -85,6 +74,17 @@ func (me *EsmeraldaServerImpl) Shutdown(code int, reason string) {
 
 	// logrus.Exit(code) will call os.Exit(code)
 	logrus.Exit(code)
+}
+
+func NewEsmeraldaServer() Server {
+	rootCtx, shutdownFn := context.WithCancel(context.Background())
+	childRoutines, childCtx := errgroup.WithContext(rootCtx)
+
+	return &EsmeraldaServerImpl{
+		context:       childCtx,
+		shutdownFn:    shutdownFn,
+		childRoutines: childRoutines,
+	}
 }
 
 func (me *EsmeraldaServerImpl) writePIDFile() {
@@ -129,10 +129,6 @@ type HttpServer struct {
 	httpSrv *http.Server
 }
 
-func NewHttpServer() *HttpServer {
-	return &HttpServer{}
-}
-
 func (me *HttpServer) Start(ctx context.Context) (err error) {
 	me.context = ctx
 
@@ -175,11 +171,17 @@ func (me *HttpServer) Start(ctx context.Context) (err error) {
 func (me *HttpServer) Shutdown(ctx context.Context) error {
 	err := me.httpSrv.Shutdown(ctx)
 
-	logrus.WithFields(logrus.Fields{
-		"error": err,
-	}).Error(util.Message("Fail to shutdown http server"))
+	if err != nil {
+		logrus.WithFields(logrus.Fields{
+			"error": err,
+		}).Error(util.Message("Fail to shutdown http server"))
+	}
 
 	return err
+}
+
+func NewHttpServer() *HttpServer {
+	return &HttpServer{}
 }
 
 func listenToSystemSignals(server Server) {

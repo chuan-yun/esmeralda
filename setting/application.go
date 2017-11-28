@@ -1,14 +1,16 @@
 package setting
 
+type Environment string
+
 const (
-	PROD    string = "production"
-	STAGING string = "staging"
-	TEST    string = "testing"
-	DEV     string = "development"
+	PROD    Environment = "production"
+	STAGING Environment = "staging"
+	TEST    Environment = "testing"
+	DEV     Environment = "development"
 )
 
 type ApplicationSettings struct {
-	Env      string
+	Env      Environment
 	Username string
 	Password string
 	Bulk     int64

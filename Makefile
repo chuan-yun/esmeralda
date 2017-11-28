@@ -18,13 +18,15 @@ BINARY  	  = esmeralda
 DATE         ?= $(shell date +%FT%T%z)
 COMMIT       ?= $(shell git describe --tags --always --dirty="-dev" --match=v* 2> /dev/null || echo v0)
 
+BUILD_TARGET  = $(CURDIR)/target
+
 LDFLAGS       = -ldflags "-X main.commit=${COMMIT} -X main.buildstamp=${DATE}"
 
 ifeq ($(OS),Windows_NT)
     BINARY := $(BINARY).exe
 endif
 
-all: format vet build
+all: format vet build install
 	@echo
 	@echo "Build complete."
 	@echo "Don't forget to run 'make test'."
@@ -44,7 +46,12 @@ staticcheck: $(STATICCHECK)
 
 build: 
 	@echo ">> building binaries"
-	@$(GO) build ${LDFLAGS} -o $(CURDIR)/target/${BINARY}
+	@$(GO) build ${LDFLAGS} -o $(BUILD_TARGET)/${BINARY}
+
+install: 
+	@echo ">> installing binaries"
+	@cp -f $(CURDIR)/esmeralda.sh $(BUILD_TARGET)/esmeralda.sh
+	@cp -f $(CURDIR)/esmeralda.toml $(BUILD_TARGET)/esmeralda.toml
 
 test:
 	@echo ">> running tests"
