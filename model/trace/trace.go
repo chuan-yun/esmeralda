@@ -1,13 +1,14 @@
 package trace
 
 import (
-	"chuanyun.io/esmeralda/util"
 	"context"
 	"encoding/json"
 	"fmt"
-	elastic "gopkg.in/olivere/elastic.v5"
 	"net/http"
 	"time"
+
+	"chuanyun.io/esmeralda/util"
+	elastic "gopkg.in/olivere/elastic.v5"
 )
 
 type ErrorResult struct {
@@ -29,25 +30,25 @@ type ErrorSpans struct {
 }
 
 type ListParams struct {
-	Duration    int    `form:"duration"`
-	Limit       int    `form:"limit"`
-	ErrorType   string `form:"errorType"`
-	Value       string `form:"value"`
-	ServiceName string `form:"serviceName"`
-	Ipv4        string `form:"ipv4"`
-	From        int64  `form:"from"`
-	To          int64  `form:"to"`
+	Duration    int
+	Limit       int
+	ErrorType   string
+	Value       string
+	ServiceName string
+	Ipv4        string
+	From        int64
+	To          int64
 }
 
 type WaterfallParams struct {
-	Index   string `form:"index" binding:"required"`
-	TraceId string `form:"traceId" binding:"required"`
+	Index   string
+	TraceId string
 }
 
 type ErrorParams struct {
-	Api  string `form:"api" binding:"required"`
-	From int64  `form:"from" binding:"required"`
-	To   int64  `form:"to" binding:"required"`
+	Api  string
+	From int64
+	To   int64
 }
 
 func InitErrorResult() *ErrorResult {
@@ -266,6 +267,7 @@ func GetTraceList(params *ListParams) (map[string]*ListResult, interface{}) {
 				}
 				ListResultMap[s.TraceId].SpanPlus(s.Id) //span count++
 
+				// @todo 什么情况下为空，以及如何处理
 				if len(s.Annotations) == 0 || len(s.BinaryAnnotations) == 0 {
 					fmt.Println("Annotations,BinaryAnnotations is empty")
 					continue
