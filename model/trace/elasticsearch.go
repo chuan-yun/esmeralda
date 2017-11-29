@@ -1,11 +1,10 @@
 package trace
 
 import (
-	"chuanyun.io/esmeralda/setting"
+	"time"
+
 	"chuanyun.io/esmeralda/util"
 	elastic "gopkg.in/olivere/elastic.v5"
-	"sync"
-	"time"
 )
 
 func getTraceTable(fromTime time.Time, toTime time.Time) []string {
@@ -43,18 +42,18 @@ func createHttpStatusQuery() *elastic.BoolQuery {
 	return query
 }
 
-var (
-	esOnce sync.Once
-	esPool *util.Pool = nil
-)
+// var (
+// 	esOnce sync.Once
+// 	esPool *util.Pool = nil
+// )
 
-func AllocEsConn() *elastic.Client {
-	esOnce.Do(func() {
-		esPool = util.NewPool(setting.Settings.Elasticsearch.Hosts, setting.Settings.Elasticsearch.Poolsize, setting.Settings.Elasticsearch.Debug)
-	})
-	return esPool.Alloc()
-}
+// func AllocEsConn() *elastic.Client {
+// 	esOnce.Do(func() {
+// 		esPool = util.NewPool(setting.Settings.Elasticsearch.Hosts, setting.Settings.Elasticsearch.Poolsize, setting.Settings.Elasticsearch.Debug)
+// 	})
+// 	return esPool.Alloc()
+// }
 
-func FreeEsConn(conn *elastic.Client) {
-	esPool.Free(conn)
-}
+// func FreeEsConn(conn *elastic.Client) {
+// 	esPool.Free(conn)
+// }

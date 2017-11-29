@@ -7,6 +7,7 @@ import (
 	"net/http"
 	"time"
 
+	"chuanyun.io/esmeralda/setting"
 	"chuanyun.io/esmeralda/util"
 	elastic "gopkg.in/olivere/elastic.v5"
 )
@@ -144,6 +145,7 @@ func GetTraceList(params *ListParams) (map[string]*ListResult, interface{}) {
 	traceIdList := []interface{}{}
 	ListResultMap := map[string]*ListResult{}
 	var dsl interface{}
+	esClient := setting.Settings.Elasticsearch.Client
 
 	//newTime := time.Now().Format("2006-01-02 15:04:05")
 	_, _, fromTime, toTime := util.CalcTimeRange(params.From, params.To)
@@ -212,11 +214,8 @@ func GetTraceList(params *ListParams) (map[string]*ListResult, interface{}) {
 	aggsTrace := elastic.NewTermsAggregation().Field("traceId").Size(params.Limit) //聚合
 
 	dsl, _ = query.Source()
-	esConn := AllocEsConn()
-	if esConn == nil {
-		return ListResultMap, dsl
-	}
-	tracesDSL := esConn.Search(esIndexes...).
+
+	tracesDSL := esClient.Search(esIndexes...).
 		IgnoreUnavailable(true).
 		FetchSource(false).
 		Size(0).From(0).
@@ -236,7 +235,7 @@ func GetTraceList(params *ListParams) (map[string]*ListResult, interface{}) {
 
 	//获取多个traceId的数据
 	traceQuery := elastic.NewBoolQuery().Must(elastic.NewTermsQuery("traceId", traceIdList...))
-	tracelistDSL := esConn.Search(esIndexes...).
+	tracelistDSL := esClient.Search(esIndexes...).
 		IgnoreUnavailable(true).
 		Size(1500).From(0).
 		Query(traceQuery)
@@ -285,13 +284,12 @@ func GetTraceList(params *ListParams) (map[string]*ListResult, interface{}) {
 			}
 		}
 		//计算占比
-		for _, val := range ListResultMap {
-			val.TraceRatio()
-		}
+		// for _, val := range ListResultMap {
+		// 	val.TraceRatio()
+		// }
 
 	}
 
-	FreeEsConn(esConn)
 	return ListResultMap, dsl
 }
 
@@ -299,11 +297,9 @@ func GetTraceWaterfall(params *WaterfallParams) *WaterResult {
 	result := InitWaterResult()
 	esIndexes := getWaterTable(params.Index)
 	query := elastic.NewTermQuery("traceId", params.TraceId)
-	esConn := AllocEsConn()
-	if esConn == nil {
-		return result
-	}
-	queryDSL := esConn.Search(esIndexes...).
+	esClient := setting.Settings.Elasticsearch.Client
+
+	queryDSL := esClient.Search(esIndexes...).
 		IgnoreUnavailable(true).
 		FetchSource(true).
 		Size(1500).From(0).
@@ -325,7 +321,7 @@ func GetTraceWaterfall(params *WaterfallParams) *WaterResult {
 		}
 		result.SpanList(spans)
 	}
-	FreeEsConn(esConn)
+
 	return result
 }
 
@@ -349,12 +345,8 @@ func GetErrorDetail(params ErrorParams) *ErrorResult {
 	include := []string{"traceId", "binaryAnnotations", "timestamp"}
 	fsc := elastic.NewFetchSourceContext(true).Include(include...)
 
-	esConn := AllocEsConn()
-	if esConn == nil {
-		return result
-	}
-
-	errorDSL := esConn.Search(esIndexes...).
+	esClient := setting.Settings.Elasticsearch.Client
+	errorDSL := esClient.Search(esIndexes...).
 		IgnoreUnavailable(true).
 		FetchSourceContext(fsc).
 		Size(10).From(0).
@@ -375,7 +367,6 @@ func GetErrorDetail(params ErrorParams) *ErrorResult {
 			}
 		}
 	}
-	FreeEsConn(esConn)
 	return result
 }
 
