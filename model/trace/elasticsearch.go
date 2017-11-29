@@ -21,7 +21,6 @@ func createBoolMustTerm(key string, value string) *elastic.BoolQuery {
 	return query
 }
 
-//组件query
 func createComponentQuery(ctype string) *elastic.BoolQuery {
 	query := elastic.NewBoolQuery()
 	query = query.Must(elastic.NewTermQuery("binaryAnnotations.key", "error"))
@@ -30,8 +29,7 @@ func createComponentQuery(ctype string) *elastic.BoolQuery {
 	return query
 }
 
-//http
-func createHttpStatusQuery() *elastic.BoolQuery {
+func createHTTPStatusQuery() *elastic.BoolQuery {
 	query := elastic.NewBoolQuery()
 	query = query.Must(elastic.NewTermQuery("binaryAnnotations.key", "http.status_code"))
 	subQuery := elastic.NewBoolQuery()
@@ -41,19 +39,3 @@ func createHttpStatusQuery() *elastic.BoolQuery {
 	query = query.Must(subQuery)
 	return query
 }
-
-// var (
-// 	esOnce sync.Once
-// 	esPool *util.Pool = nil
-// )
-
-// func AllocEsConn() *elastic.Client {
-// 	esOnce.Do(func() {
-// 		esPool = util.NewPool(setting.Settings.Elasticsearch.Hosts, setting.Settings.Elasticsearch.Poolsize, setting.Settings.Elasticsearch.Debug)
-// 	})
-// 	return esPool.Alloc()
-// }
-
-// func FreeEsConn(conn *elastic.Client) {
-// 	esPool.Free(conn)
-// }

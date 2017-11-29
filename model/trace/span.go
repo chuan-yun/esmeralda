@@ -19,15 +19,15 @@ type BinaryAnnotation struct {
 }
 
 type Span struct {
-	Id                string             `json:"id"`
+	ID                string             `json:"id"`
 	Timestamp         int64              `json:"timestamp"`
-	ParentId          string             `json:"parentId"`
+	ParentID          string             `json:"parentId"`
 	Duration          int64              `json:"duration"`
 	Name              string             `json:"name"`
-	TraceId           string             `json:"traceId"`
+	TraceID           string             `json:"traceId"`
 	Annotations       []Annotation       `json:"annotations"`
 	BinaryAnnotations []BinaryAnnotation `json:"binaryAnnotations"`
 	Version           string             `json:"version"`
-	RelatedApi        string             `json:"relatedApi"`
+	RelatedAPI        string             `json:"relatedApi"`
 	InsertTime        string             `json:"insertTime"`
 }

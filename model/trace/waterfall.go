@@ -1,46 +1,45 @@
 package trace
 
 import (
-	"chuanyun.io/esmeralda/util"
 	"fmt"
 	"sort"
 	"strings"
+
+	"chuanyun.io/esmeralda/util"
 )
 
 type WFList []*WaterfallList
 
-func (self WFList) getChild(id string) (*WaterfallList, bool) {
-	for _, val := range self {
-		if val.Id == id {
+func (WFList WFList) getChild(id string) (*WaterfallList, bool) {
+	for _, val := range WFList {
+		if val.ID == id {
 			return val, true
 		}
 	}
 	return nil, false
 }
 
-func (self WFList) addChild(wf *WaterfallList) WFList {
-	for i, val := range self {
-		if val.Id == wf.Id {
-			self[i] = wf
-			return self
+func (WFList WFList) addChild(wf *WaterfallList) WFList {
+	for i, val := range WFList {
+		if val.ID == wf.ID {
+			WFList[i] = wf
+			return WFList
 		}
 	}
-	self = append(self, wf)
-	return self
+	WFList = append(WFList, wf)
+	return WFList
 }
 
-//为了Map的 Timestamp 排序 .
-func (wf WFList) Len() int {
-	return len(wf)
+func (WFList WFList) Len() int {
+	return len(WFList)
 }
 
-func (wf WFList) Less(i, j int) bool {
-	return wf[i].Timestamp < wf[j].Timestamp
+func (WFList WFList) Less(i, j int) bool {
+	return WFList[i].Timestamp < WFList[j].Timestamp
 }
 
-//Swap()
-func (wf WFList) Swap(i, j int) {
-	wf[i], wf[j] = wf[j], wf[i]
+func (WFList WFList) Swap(i, j int) {
+	WFList[i], WFList[j] = WFList[j], WFList[i]
 }
 
 type WaterResult struct {
@@ -60,13 +59,13 @@ type WaterfallList struct {
 	AllAnnotations AllAnnotations `json:"allAnnotations"`
 	Duration       int64          `json:"duration"`
 	Flag           string         `json:"flag"`
-	Id             string         `json:"id"`
-	ParentId       string         `json:"parentId"`
+	ID             string         `json:"id"`
+	ParentID       string         `json:"parentId"`
 	Name           string         `json:"name"`
 	Nodes          WFList         `json:"nodes"`
 	ServiceName    string         `json:"serviceName"`
 	Timestamp      int64          `json:"timestamp"`
-	TopoUri        string         `json:"topoUri"`
+	TopoURI        string         `json:"topoUri"`
 }
 
 type AllAnnotations struct {
@@ -76,9 +75,9 @@ type AllAnnotations struct {
 }
 
 type ABaseMap struct {
-	ParentId string `json:"parentId"`
-	SpanId   string `json:"spanId"`
-	TraceId  string `json:"traceId"`
+	ParentID string `json:"parentId"`
+	SpanID   string `json:"spanId"`
+	TraceID  string `json:"traceId"`
 }
 
 type AnnotationsMap struct {
@@ -94,7 +93,6 @@ type BinaryAnnotationsMap struct {
 	Value string `json:"value"`
 }
 
-//为了实现cs sr ss cr的顺序排列.
 func (s AllAnnotations) Len() int {
 	return len(s.Annotations)
 }
@@ -103,7 +101,6 @@ func (s AllAnnotations) Less(i, j int) bool {
 	return s.Annotations[i].sortAnnotation < s.Annotations[j].sortAnnotation
 }
 
-//Swap()
 func (s AllAnnotations) Swap(i, j int) {
 	s.Annotations[i], s.Annotations[j] = s.Annotations[j], s.Annotations[i]
 }
@@ -159,37 +156,37 @@ func TranServerName(stype string) string {
 	return trans[stype]
 }
 
-func (self *WaterResult) SpanStat(span Span) {
-	if span.ParentId == "" {
-		self.Stat.Duration = span.Duration
-		self.Stat.StartTimestamp = span.Timestamp
+func (WaterResult *WaterResult) SpanStat(span Span) {
+	if span.ParentID == "" {
+		WaterResult.Stat.Duration = span.Duration
+		WaterResult.Stat.StartTimestamp = span.Timestamp
 	}
 	if len(span.Annotations) == 0 || len(span.BinaryAnnotations) == 0 {
 		fmt.Print("Annotations or BinaryAnnotations is empty")
 		return
 	}
-	if len(self.Stat.spanIds) == 0 {
-		self.Stat.spanIds = map[string]bool{span.Id: true}
+	if len(WaterResult.Stat.spanIds) == 0 {
+		WaterResult.Stat.spanIds = map[string]bool{span.ID: true}
 	} else {
-		if _, ok := self.Stat.spanIds[span.Id]; !ok {
-			self.Stat.spanIds[span.Id] = true
+		if _, ok := WaterResult.Stat.spanIds[span.ID]; !ok {
+			WaterResult.Stat.spanIds[span.ID] = true
 		}
 	}
-	self.Stat.SpanCount = len(self.Stat.spanIds)
+	WaterResult.Stat.SpanCount = len(WaterResult.Stat.spanIds)
 	serverName := span.Annotations[0].Endpoint.ServiceName
 	if checkServerName(serverName) {
-		if _, ok := self.Stat.ServiceList[serverName]; !ok {
-			if self.Stat.ServiceList == nil {
-				self.Stat.ServiceList = map[string]int{serverName: 0}
+		if _, ok := WaterResult.Stat.ServiceList[serverName]; !ok {
+			if WaterResult.Stat.ServiceList == nil {
+				WaterResult.Stat.ServiceList = map[string]int{serverName: 0}
 			}
 		}
-		self.Stat.ServiceList[serverName]++
+		WaterResult.Stat.ServiceList[serverName]++
 	}
 }
 
 func getChild(pid string, spans []Span) (ret []Span, left []Span) {
 	for _, span := range spans {
-		if span.ParentId == pid {
+		if span.ParentID == pid {
 			ret = append(ret, span)
 		} else {
 			left = append(left, span)
@@ -198,19 +195,19 @@ func getChild(pid string, spans []Span) (ret []Span, left []Span) {
 	return
 }
 
-func (self *WaterResult) SpanList(spans []Span) {
-	tempWaterfallList := map[string]*WaterfallList{} //临时存储的map
+func (WaterResult *WaterResult) SpanList(spans []Span) {
+	tempWaterfallList := map[string]*WaterfallList{}
 
 	for _, span := range spans {
 		wf := &WaterfallList{
-			Id:             span.Id,
+			ID:             span.ID,
 			Duration:       span.Duration,
 			Name:           span.Name,
 			Flag:           "default",
 			Timestamp:      span.Timestamp,
-			ParentId:       span.ParentId,
+			ParentID:       span.ParentID,
 			ServiceName:    span.getSpanServerName(),
-			TopoUri:        span.getSpanTopoUri(),
+			TopoURI:        span.getSpanTopoURI(),
 			Nodes:          []*WaterfallList{},
 			AllAnnotations: AllAnnotations{},
 		}
@@ -222,46 +219,43 @@ func (self *WaterResult) SpanList(spans []Span) {
 			}
 		}
 
-		spanAnnotation := span.formatAnnotations(self.Stat.StartTimestamp)
-		spanBinaryAnnotation := span.formatBinaryAnnotations(self.Stat.StartTimestamp)
+		spanAnnotation := span.formatAnnotations(WaterResult.Stat.StartTimestamp)
+		spanBinaryAnnotation := span.formatBinaryAnnotations(WaterResult.Stat.StartTimestamp)
 
 		wf.AllAnnotations = AllAnnotations{
 			Annotations:       spanAnnotation,
 			BinaryAnnotations: spanBinaryAnnotation,
 			Base: ABaseMap{
-				TraceId:  span.TraceId,
-				SpanId:   span.Id,
-				ParentId: span.ParentId,
+				TraceID:  span.TraceID,
+				SpanID:   span.ID,
+				ParentID: span.ParentID,
 			},
 		}
 
-		// 合并相同的span @TODO 合并2个span
-		if tempWaterfallList[wf.Id] != nil {
-			tempWaterfallList[wf.Id].AllAnnotations.Annotations = mergeAnnotation(tempWaterfallList[wf.Id].AllAnnotations.Annotations, spanAnnotation)
-			tempWaterfallList[wf.Id].AllAnnotations.BinaryAnnotations = append(tempWaterfallList[wf.Id].AllAnnotations.BinaryAnnotations, spanBinaryAnnotation...)
+		if tempWaterfallList[wf.ID] != nil {
+			tempWaterfallList[wf.ID].AllAnnotations.Annotations = mergeAnnotation(tempWaterfallList[wf.ID].AllAnnotations.Annotations, spanAnnotation)
+			tempWaterfallList[wf.ID].AllAnnotations.BinaryAnnotations = append(tempWaterfallList[wf.ID].AllAnnotations.BinaryAnnotations, spanBinaryAnnotation...)
 		} else {
-			tempWaterfallList[wf.Id] = wf
+			tempWaterfallList[wf.ID] = wf
 		}
 	}
 
 	for _, span := range spans {
-		pWf, ok1 := tempWaterfallList[span.ParentId]
-		curWf, ok2 := tempWaterfallList[span.Id]
+		pWf, ok1 := tempWaterfallList[span.ParentID]
+		curWf, ok2 := tempWaterfallList[span.ID]
 		if ok1 && ok2 {
-			if pWf.ParentId == "" {
-				pWf.ParentId = "0"
-				self.List = self.List.addChild(pWf)
+			if pWf.ParentID == "" {
+				pWf.ParentID = "0"
+				WaterResult.List = WaterResult.List.addChild(pWf)
 			}
-			//if _, ok := self.List[pWf.ParentId]; ok {
-			if _, ok := self.List.getChild(pWf.ParentId); ok {
 
-				//span合并 以 Server 端信息为主的部分
+			if _, ok := WaterResult.List.getChild(pWf.ParentID); ok {
+
 				if span.isClient() && curWf.Name == "php_curl" {
 					curWf.Name = span.Name
 				}
-				// Span 合并，以 Client 端信息为主的部分
+
 				if span.isServer() {
-					//if span.Duration
 					if span.Duration != 0 {
 						curWf.Duration = span.Duration
 					}
@@ -270,29 +264,17 @@ func (self *WaterResult) SpanList(spans []Span) {
 					}
 				}
 
-				// 不知道为什么要合并两边 @liupeng70
-				//a := span.formatAnnotations(self.Stat.StartTimestamp)
-				//curWf.AllAnnotations.Annotations = append(curWf.AllAnnotations.Annotations, a...)
-				//b := span.formatBinaryAnnotations(self.Stat.StartTimestamp)
-				//curWf.AllAnnotations.BinaryAnnotations = append(curWf.AllAnnotations.BinaryAnnotations, b...)
-
-				curWf.AllAnnotations.Annotations = span.formatAnnotations(self.Stat.StartTimestamp)
-				curWf.AllAnnotations.BinaryAnnotations = span.formatBinaryAnnotations(self.Stat.StartTimestamp)
+				curWf.AllAnnotations.Annotations = span.formatAnnotations(WaterResult.Stat.StartTimestamp)
+				curWf.AllAnnotations.BinaryAnnotations = span.formatBinaryAnnotations(WaterResult.Stat.StartTimestamp)
 			}
 
-			//if span.isServer() {
-			// Liupeng70 此处为何要对 span.isServer 单独处理?
-			//curWf.ServiceName = span.getSpanServerName()
 			curWf.SetNameFlag()
-			//}
-
 			sort.Sort(curWf.AllAnnotations)
-
 			pWf.Nodes = pWf.Nodes.addChild(curWf)
 		}
 	}
 	//对Timestamp 排序
-	SortList(self.List)
+	SortList(WaterResult.List)
 }
 
 func SortList(list WFList) {
@@ -345,9 +327,8 @@ func (span *Span) getSpanServerName() string {
 	return serverName
 }
 
-// 拿到 URI 的拓扑地址，http、redis、memcache、mysql
-func (span *Span) getSpanTopoUri() string {
-	topoUri := ""
+func (span *Span) getSpanTopoURI() string {
+	topoURI := ""
 	tmp := map[string](string){
 		"type":      "",
 		"instance":  "",
@@ -372,32 +353,25 @@ func (span *Span) getSpanTopoUri() string {
 	}
 
 	if tmp["type"] == "" {
-		return topoUri
+		return topoURI
 	}
 
-	// 去除 gateway 的依赖
 	if tmp["type"] == "http" {
-		// ret := gateway.SearchUri(tmp["address"])
-		// if ret.Id != 0 {
-		// 	return ret.Uri
-		// }
 		return tmp["address"]
-	} else {
-
-		if tmp["address"] == "" {
-			return topoUri
-		}
-
-		topoUri = tmp["type"] + "://" + tmp["address"]
-
-		if tmp["type"] == "mysql" {
-			topoUri += "/" + tmp["instance"]
-		}
 	}
-	return topoUri
+
+	if tmp["address"] == "" {
+		return topoURI
+	}
+
+	topoURI = tmp["type"] + "://" + tmp["address"]
+	if tmp["type"] == "mysql" {
+		topoURI += "/" + tmp["instance"]
+	}
+
+	return topoURI
 }
 
-//格式化Annotations
 func (span *Span) formatAnnotations(traceTimestamp int64) []AnnotationsMap {
 	ret := []AnnotationsMap{}
 	if len(span.Annotations) > 0 {
@@ -425,7 +399,6 @@ func (span *Span) formatAnnotations(traceTimestamp int64) []AnnotationsMap {
 	return ret
 }
 
-//格式化BinaryAnnotations
 func (span *Span) formatBinaryAnnotations(traceTimestamp int64) []BinaryAnnotationsMap {
 	ret := []BinaryAnnotationsMap{}
 	if len(span.Annotations) > 0 {
@@ -453,7 +426,6 @@ func (span *Span) formatBinaryAnnotations(traceTimestamp int64) []BinaryAnnotati
 	return ret
 }
 
-// 合并两个 Annotations
 func mergeAnnotation(annotationOrg []AnnotationsMap, annotationNew []AnnotationsMap) []AnnotationsMap {
 	if len(annotationNew) > 0 {
 		tmpSpanKey := make(map[string]bool)

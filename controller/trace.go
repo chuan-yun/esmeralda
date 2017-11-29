@@ -1,11 +1,12 @@
 package controller
 
 import (
+	"net/http"
+	"strconv"
+
 	traceModel "chuanyun.io/esmeralda/model/trace"
 	"chuanyun.io/esmeralda/util"
 	"github.com/julienschmidt/httprouter"
-	"net/http"
-	"strconv"
 )
 
 func Lists(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
@@ -100,6 +101,6 @@ func Waterfall(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
 		return
 	}
 	params.Index = index
-	params.TraceId = traceId
+	params.TraceID = traceId
 	util.JSON(w, traceModel.Waterfall(params))
 }

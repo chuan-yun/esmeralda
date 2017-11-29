@@ -24,7 +24,7 @@ type ErrorMeta struct {
 type ErrorSpans struct {
 	ErrorMessage string `json:"errorMessage"`
 	ErrorType    string `json:"errorType"`
-	TraceId      string `json:"traceId"`
+	TraceID      string `json:"traceId"`
 	Duration     int64  `json:"duration"`
 	Time         int64  `json:"time"`
 	Index        string `json:"index"`
@@ -43,11 +43,11 @@ type ListParams struct {
 
 type WaterfallParams struct {
 	Index   string
-	TraceId string
+	TraceID string
 }
 
 type ErrorParams struct {
-	Api  string
+	API  string
 	From int64
 	To   int64
 }
@@ -59,12 +59,12 @@ func InitErrorResult() *ErrorResult {
 	}
 }
 
-func (self *ErrorResult) DoingSpan(span Span) {
+func (ErrorResult *ErrorResult) DoingSpan(span Span) {
 	errorSpans := ErrorSpans{
 		Time:     span.Timestamp,
 		Duration: span.Duration,
 		Index:    util.FormatInt64Index(span.Timestamp),
-		TraceId:  span.TraceId,
+		TraceID:  span.TraceID,
 	}
 	if len(span.BinaryAnnotations) > 0 {
 		for _, bA := range span.BinaryAnnotations {
@@ -89,7 +89,7 @@ func (self *ErrorResult) DoingSpan(span Span) {
 			}
 		}
 	}
-	self.Spans = append(self.Spans, errorSpans)
+	ErrorResult.Spans = append(ErrorResult.Spans, errorSpans)
 }
 
 func Lists(params *ListParams) *util.ResponseDebug {
@@ -133,7 +133,6 @@ func Lists(params *ListParams) *util.ResponseDebug {
 	return resp
 }
 
-//trace 瀑布图
 func Waterfall(params *WaterfallParams) *util.Response {
 	resp := &util.Response{}
 	resp.Status = http.StatusOK
@@ -142,29 +141,20 @@ func Waterfall(params *WaterfallParams) *util.Response {
 }
 
 func GetTraceList(params *ListParams) (map[string]*ListResult, interface{}) {
-	traceIdList := []interface{}{}
+	traceIDList := []interface{}{}
 	ListResultMap := map[string]*ListResult{}
 	var dsl interface{}
 	esClient := setting.Settings.Elasticsearch.Client
 
-	//newTime := time.Now().Format("2006-01-02 15:04:05")
 	_, _, fromTime, toTime := util.CalcTimeRange(params.From, params.To)
 	esIndexes := getTraceTable(fromTime, toTime)
 
-	//拼装es DSL
 	query := elastic.NewBoolQuery()
-
-	//条件 timestamp开始 和结束 >>start && << end
 	query = query.Must(elastic.NewRangeQuery("timestamp").Gte(fromTime.UnixNano() / 1000).Lte(toTime.UnixNano() / 1000).
 		IncludeLower(true).IncludeUpper(true))
 
-	//条件 1.insertTime
-	//query = query.Must(elastic.NewRangeQuery("insertTime").Lte(newTime))
-
 	if len(params.Value) > 0 {
-		//处理host
 		queryShould := elastic.NewBoolQuery()
-		//match_phrase
 		queryShould = queryShould.Should(elastic.NewMatchPhraseQuery("binaryAnnotations.value", params.Value))
 		queryShould = queryShould.Should(elastic.NewMatchPhraseQuery("relatedApi", params.Value))
 		queryShould = queryShould.Should(elastic.NewMatchPhraseQuery("selfApi", params.Value))
@@ -186,7 +176,7 @@ func GetTraceList(params *ListParams) (map[string]*ListResult, interface{}) {
 	}
 
 	//错误类型
-	err, errTypes := parseErrorType(params.ErrorType)
+	errTypes, err := parseErrorType(params.ErrorType)
 	if err == nil {
 		isAllErr := ""
 		for _, errType := range errTypes {
@@ -197,13 +187,13 @@ func GetTraceList(params *ListParams) (map[string]*ListResult, interface{}) {
 		if isAllErr == "all" {
 			queryShould := elastic.NewBoolQuery()
 			queryShould = queryShould.Should(createBoolMustTerm("binaryAnnotations.key", "error"))
-			queryShould = queryShould.Should(createHttpStatusQuery())
+			queryShould = queryShould.Should(createHTTPStatusQuery())
 			query = query.Must(queryShould)
 		} else {
 			queryShould := elastic.NewBoolQuery()
 			for _, errType := range errTypes {
 				if errType == "api" {
-					queryShould = queryShould.Should(createHttpStatusQuery())
+					queryShould = queryShould.Should(createHTTPStatusQuery())
 				} else {
 					queryShould = queryShould.Should(createComponentQuery(errType))
 				}
@@ -228,13 +218,12 @@ func GetTraceList(params *ListParams) (map[string]*ListResult, interface{}) {
 	} else {
 		if terms, ok := rlt.Aggregations.Terms("traceId"); ok {
 			for _, b := range terms.Buckets {
-				traceIdList = append(traceIdList, b.Key.(string))
+				traceIDList = append(traceIDList, b.Key.(string))
 			}
 		}
 	}
 
-	//获取多个traceId的数据
-	traceQuery := elastic.NewBoolQuery().Must(elastic.NewTermsQuery("traceId", traceIdList...))
+	traceQuery := elastic.NewBoolQuery().Must(elastic.NewTermsQuery("traceId", traceIDList...))
 	tracelistDSL := esClient.Search(esIndexes...).
 		IgnoreUnavailable(true).
 		Size(1500).From(0).
@@ -249,22 +238,22 @@ func GetTraceList(params *ListParams) (map[string]*ListResult, interface{}) {
 			if err := json.Unmarshal(*hit.Source, &s); err != nil {
 				fmt.Println("tracelistDSL list json err: ", err)
 			} else {
-				if _, ok := ListResultMap[s.TraceId]; !ok {
-					ListResultMap[s.TraceId] = InitResult(s.TraceId, s.Id)
+				if _, ok := ListResultMap[s.TraceID]; !ok {
+					ListResultMap[s.TraceID] = InitResult(s.TraceID, s.ID)
 				}
-				if s.ParentId == "" {
-					ListResultMap[s.TraceId].SetTimestamp(s.Timestamp)
-					ListResultMap[s.TraceId].SetDuration(s.Duration)
-					ListResultMap[s.TraceId].SetRoot(true)
+				if s.ParentID == "" {
+					ListResultMap[s.TraceID].SetTimestamp(s.Timestamp)
+					ListResultMap[s.TraceID].SetDuration(s.Duration)
+					ListResultMap[s.TraceID].SetRoot(true)
 				} else {
-					if ListResultMap[s.TraceId].Root == false && s.Duration >= ListResultMap[s.TraceId].Duration {
-						ListResultMap[s.TraceId].SetDuration(s.Duration)
+					if ListResultMap[s.TraceID].Root == false && s.Duration >= ListResultMap[s.TraceID].Duration {
+						ListResultMap[s.TraceID].SetDuration(s.Duration)
 					}
-					if ListResultMap[s.TraceId].Timestamp == 0 {
-						ListResultMap[s.TraceId].SetTimestamp(s.Timestamp)
+					if ListResultMap[s.TraceID].Timestamp == 0 {
+						ListResultMap[s.TraceID].SetTimestamp(s.Timestamp)
 					}
 				}
-				ListResultMap[s.TraceId].SpanPlus(s.Id) //span count++
+				ListResultMap[s.TraceID].SpanPlus(s.ID) //span count++
 
 				// @todo 什么情况下为空，以及如何处理
 				if len(s.Annotations) == 0 || len(s.BinaryAnnotations) == 0 {
@@ -275,12 +264,12 @@ func GetTraceList(params *ListParams) (map[string]*ListResult, interface{}) {
 				//ServiceNameList
 				serverName := s.Annotations[0].Endpoint.ServiceName
 				if serverName != "" {
-					ListResultMap[s.TraceId].SetServiceName(serverName, s.RelatedApi)
-					ListResultMap[s.TraceId].ServiceNamePlus(serverName)
-					ListResultMap[s.TraceId].ServiceNameDuration(serverName, s.Duration)
-					ListResultMap[s.TraceId].ServiceNameUri(serverName, s.BinaryAnnotations)
+					ListResultMap[s.TraceID].SetServiceName(serverName, s.RelatedAPI)
+					ListResultMap[s.TraceID].ServiceNamePlus(serverName)
+					ListResultMap[s.TraceID].ServiceNameDuration(serverName, s.Duration)
+					ListResultMap[s.TraceID].ServiceNameUri(serverName, s.BinaryAnnotations)
 				}
-				ListResultMap[s.TraceId].setComponentInfo(s.BinaryAnnotations)
+				ListResultMap[s.TraceID].setComponentInfo(s.BinaryAnnotations)
 			}
 		}
 		//计算占比
@@ -296,7 +285,7 @@ func GetTraceList(params *ListParams) (map[string]*ListResult, interface{}) {
 func GetTraceWaterfall(params *WaterfallParams) *WaterResult {
 	result := InitWaterResult()
 	esIndexes := getWaterTable(params.Index)
-	query := elastic.NewTermQuery("traceId", params.TraceId)
+	query := elastic.NewTermQuery("traceId", params.TraceID)
 	esClient := setting.Settings.Elasticsearch.Client
 
 	queryDSL := esClient.Search(esIndexes...).
@@ -332,15 +321,14 @@ func GetErrorDetail(params ErrorParams) *ErrorResult {
 	esIndexes := getTraceTable(fromTime, toTime)
 
 	query := elastic.NewBoolQuery()
-	//条件 timestamp开始 和结束 >>start && << end
 	query = query.Must(elastic.NewRangeQuery("timestamp").Gte(fromTime.UnixNano() / 1000).Lte(toTime.UnixNano() / 1000).
 		IncludeLower(true).IncludeUpper(true))
 	query = query.Must(elastic.NewRangeQuery("insertTime").Lte(newTime))
-	query = query.Must(elastic.NewTermQuery("relatedApi", params.Api))
+	query = query.Must(elastic.NewTermQuery("relatedApi", params.API))
 
 	queryShould := elastic.NewBoolQuery()
 	queryShould = queryShould.Should(createBoolMustTerm("binaryAnnotations.key", "error"))
-	queryShould = queryShould.Should(createHttpStatusQuery())
+	queryShould = queryShould.Should(createHTTPStatusQuery())
 	query = query.Must(queryShould)
 	include := []string{"traceId", "binaryAnnotations", "timestamp"}
 	fsc := elastic.NewFetchSourceContext(true).Include(include...)
@@ -374,15 +362,14 @@ func checkServerName(serverName string) bool {
 	return serverName != "" && serverName != "mysql" && serverName != "redis" && serverName != "memcache"
 }
 
-//解析errorType
-func parseErrorType(str string) (error, []string) {
+func parseErrorType(str string) ([]string, error) {
 	errTypes := []string{}
 	if str == "" {
-		return nil, errTypes
+		return errTypes, nil
 	}
 	var err error
 	if err = json.Unmarshal([]byte(str), &errTypes); err != nil {
-		return err, errTypes
+		return errTypes, nil
 	}
-	return nil, errTypes
+	return errTypes, nil
 }
