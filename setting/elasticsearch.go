@@ -8,8 +8,6 @@ import (
 
 type ElasticsearchSettings struct {
 	Hosts    []string
-	Debug    bool
-	Poolsize int
 	Username string
 	Password string
 	Sniff    bool
@@ -39,5 +37,4 @@ func InitializeElasticClient() {
 			"clients": Settings.Elasticsearch.Client,
 		}).Info("Initialize elasticsearch client connections completed")
 	}
-
 }
