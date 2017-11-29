@@ -27,17 +27,6 @@ func (me *CollectorServerImpl) Shutdown(code int, reason string) {
 
 }
 
-// func NewCollectorServer() server.Server {
-// 	rootCtx, shutdownFn := context.WithCancel(context.Background())
-// 	childRoutines, childCtx := errgroup.WithContext(rootCtx)
-
-// 	return &CollectorServerImpl{
-// 		context:       childCtx,
-// 		shutdownFn:    shutdownFn,
-// 		childRoutines: childRoutines,
-// 	}
-// }
-
 func HTTPCollector(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
 
 	body := util.RequestBodyToString(r.Body)
