@@ -6,12 +6,9 @@ import (
 
 	"chuanyun.io/esmeralda/collector/trace"
 	"chuanyun.io/esmeralda/util"
-	"chuanyun.io/quasimodo/elasticsearch"
 	"github.com/julienschmidt/httprouter"
-	cache "github.com/patrickmn/go-cache"
 	"github.com/sirupsen/logrus"
 	"golang.org/x/sync/errgroup"
-	elastic "gopkg.in/olivere/elastic.v5"
 )
 
 var SpansProcessingChan = make(chan *[]trace.Span)
@@ -87,59 +84,59 @@ func SpansToDoc() {
 	}()
 }
 
-func saveDoc(docCh <-chan elasticsearch.Document) error {
-	go func() {
-		for document := range SpansProcessingChan {
-			cacheKey := document.IndexName + document.TypeName
+// func saveDoc(docCh <-chan elasticsearch.Document) error {
+// 	go func() {
+// 		for document := range SpansProcessingChan {
+// 			cacheKey := document.IndexName + document.TypeName
 
-			_, found := indexCache.Get(cacheKey)
-			if found {
-				// logrus.Info("main: index:" + indexName + " exists.")
-			} else {
-				// Use the IndexExists service to check if a specified index exists.
-				exists, err := elasticsearchClient.IndexExists(document.IndexName).Do(ctx)
-				if err != nil {
-					logrus.Fatal(err)
-				}
-				if !exists {
+// 			_, found := indexCache.Get(cacheKey)
+// 			if found {
+// 				// logrus.Info("main: index:" + indexName + " exists.")
+// 			} else {
+// 				// Use the IndexExists service to check if a specified index exists.
+// 				exists, err := elasticsearchClient.IndexExists(document.IndexName).Do(ctx)
+// 				if err != nil {
+// 					logrus.Fatal(err)
+// 				}
+// 				if !exists {
 
-					createIndex, err := elasticsearchClient.CreateIndex(document.IndexName).BodyString(elasticsearch.Mappings[document.IndexBaseName]).Do(ctx)
-					if err != nil {
-						logrus.Warn(err)
-						continue
-					}
-					if !createIndex.Acknowledged {
-						// Not acknowledged
-					}
-				}
-				indexCache.Set(cacheKey, true, cache.DefaultExpiration)
+// 					createIndex, err := elasticsearchClient.CreateIndex(document.IndexName).BodyString(elasticsearch.Mappings[document.IndexBaseName]).Do(ctx)
+// 					if err != nil {
+// 						logrus.Warn(err)
+// 						continue
+// 					}
+// 					if !createIndex.Acknowledged {
+// 						// Not acknowledged
+// 					}
+// 				}
+// 				indexCache.Set(cacheKey, true, cache.DefaultExpiration)
 
-				// aliasService := elastic.NewAliasService(elasticsearchClient)
-				// aliasService.Add(document.IndexName, "alias-"+document.IndexName)
-			}
+// 				// aliasService := elastic.NewAliasService(elasticsearchClient)
+// 				// aliasService.Add(document.IndexName, "alias-"+document.IndexName)
+// 			}
 
-			indexRequest := elastic.NewBulkIndexRequest().Index(document.IndexName).Type(document.TypeName).Doc(document.Payload)
-			bulkRequest = bulkRequest.Add(indexRequest)
-		}
+// 			indexRequest := elastic.NewBulkIndexRequest().Index(document.IndexName).Type(document.TypeName).Doc(document.Payload)
+// 			bulkRequest = bulkRequest.Add(indexRequest)
+// 		}
 
-		bulkResponse, err := bulkRequest.Do(ctx)
-		if err != nil {
-			logrus.Fatal(err)
-		}
-		if bulkResponse == nil {
-			logrus.Fatal("main: expected bulkResponse to be != nil; got nil")
-		}
+// 		bulkResponse, err := bulkRequest.Do(ctx)
+// 		if err != nil {
+// 			logrus.Fatal(err)
+// 		}
+// 		if bulkResponse == nil {
+// 			logrus.Fatal("main: expected bulkResponse to be != nil; got nil")
+// 		}
 
-		indexed := bulkResponse.Indexed()
+// 		indexed := bulkResponse.Indexed()
 
-		if len(indexed) > 0 {
-			for _, value := range indexed {
-				if value.Status != 201 {
-					logrus.Error("main: document bulk index error:" + value.Index)
-				}
-			}
-		}
-	}()
+// 		if len(indexed) > 0 {
+// 			for _, value := range indexed {
+// 				if value.Status != 201 {
+// 					logrus.Error("main: document bulk index error:" + value.Index)
+// 				}
+// 			}
+// 		}
+// 	}()
 
-	return nil
-}
+// 	return nil
+// }
