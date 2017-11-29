@@ -33,8 +33,6 @@ type Span struct {
 	TraceID           json.RawMessage    `json:"traceId"`
 	BinaryAnnotations []BinaryAnnotation `json:"binaryAnnotations,omitempty"`
 	Annotations       []Annotation       `json:"annotations"`
-	RelatedAPI        string             `json:"relatedApi,omitempty"`
-	SelfAPI           string             `json:"selfApi,omitempty"`
 	InsertTime        string             `json:"insertTime,omitempty"`
 }
 
