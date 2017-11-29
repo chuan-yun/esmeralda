@@ -9,6 +9,8 @@ import (
 	"runtime"
 	"runtime/trace"
 
+	_ "net/http/pprof"
+
 	"chuanyun.io/esmeralda/server"
 )
 
