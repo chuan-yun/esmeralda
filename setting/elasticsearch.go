@@ -35,6 +35,6 @@ func InitializeElasticClient() {
 	} else {
 		logrus.WithFields(logrus.Fields{
 			"clients": Settings.Elasticsearch.Client,
-		}).Info("Initialize elasticsearch client connections completed")
+		}).Info(Settings.Elasticsearch.Client)
 	}
 }
