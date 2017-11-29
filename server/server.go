@@ -49,6 +49,7 @@ func (me *EsmeraldaServerImpl) Start() {
 	setting.InitializeElasticClient()
 
 	me.writePIDFile()
+	collector.SpansToDoc()
 	me.startHTTPServer()
 }
 

@@ -276,5 +276,5 @@ func TestHTTPCollector(t *testing.T) {
 		log.Fatal(err)
 	}
 
-	fmt.Printf("%s", greeting)
+	t.Log(fmt.Sprintf("%s", greeting))
 }
