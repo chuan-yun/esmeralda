@@ -10,8 +10,6 @@ const (
 )
 
 type ApplicationSettings struct {
-	Env      Environment
-	Username string
-	Password string
-	Bulk     int64
+	Env   Environment
+	Debug bool
 }

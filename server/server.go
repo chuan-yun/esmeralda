@@ -18,13 +18,12 @@ import (
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 	"github.com/sirupsen/logrus"
 
+	"chuanyun.io/esmeralda/collector"
 	"chuanyun.io/esmeralda/controller"
 	"chuanyun.io/esmeralda/setting"
 	"chuanyun.io/esmeralda/util"
 	"golang.org/x/sync/errgroup"
 )
-
-var exitChan = make(chan int)
 
 var configFilePath = flag.String("config", "/etc/chuanyun/esmeralda.toml", "config file path")
 var pidFile = flag.String("pidfile", "", "path to pid file")
@@ -38,7 +37,7 @@ type EsmeraldaServerImpl struct {
 	context       context.Context
 	shutdownFn    context.CancelFunc
 	childRoutines *errgroup.Group
-	httpServer    *HttpServer
+	httpServer    *HTTPServer
 }
 
 func (me *EsmeraldaServerImpl) Start() {
@@ -47,8 +46,10 @@ func (me *EsmeraldaServerImpl) Start() {
 
 	setting.Initialize(*configFilePath)
 
+	setting.InitializeElasticClient()
+
 	me.writePIDFile()
-	me.startHttpServer()
+	me.startHTTPServer()
 }
 
 func (me *EsmeraldaServerImpl) Shutdown(code int, reason string) {
@@ -65,14 +66,17 @@ func (me *EsmeraldaServerImpl) Shutdown(code int, reason string) {
 	}
 
 	me.shutdownFn()
-	err = me.childRoutines.Wait()
+	if err = me.childRoutines.Wait(); err != nil {
+		logrus.WithFields(logrus.Fields{
+			"error": err,
+		}).Info("Failed to shutdown childRoutines")
+	}
 
 	logrus.WithFields(logrus.Fields{
 		"reason": reason,
-		"error":  err,
+		"code":   code,
 	}).Info("Shutdown server completed")
 
-	// logrus.Exit(code) will call os.Exit(code)
 	logrus.Exit(code)
 }
 
@@ -112,9 +116,9 @@ func (me *EsmeraldaServerImpl) writePIDFile() {
 	}).Info("Writing PID file")
 }
 
-func (me *EsmeraldaServerImpl) startHttpServer() {
+func (me *EsmeraldaServerImpl) startHTTPServer() {
 
-	me.httpServer = NewHttpServer()
+	me.httpServer = NewHTTPServer()
 	err := me.httpServer.Start(me.context)
 
 	if err != nil {
@@ -124,18 +128,18 @@ func (me *EsmeraldaServerImpl) startHttpServer() {
 	}
 }
 
-type HttpServer struct {
+type HTTPServer struct {
 	context context.Context
 	httpSrv *http.Server
 }
 
-func (me *HttpServer) Start(ctx context.Context) (err error) {
+func (me *HTTPServer) Start(ctx context.Context) (err error) {
 	me.context = ctx
 
 	listenAddr := fmt.Sprintf("%s:%s", setting.Settings.Web.Address, strconv.FormatInt(setting.Settings.Web.Port, 10))
 
 	router := httprouter.New()
-	router.GET(setting.Settings.Web.Prefix+"/collector/log", controller.Collect)
+	router.GET(setting.Settings.Web.Prefix+"/collector/log", collector.HTTPCollector)
 
 	router.GET(setting.Settings.Web.Prefix+"/traces", util.CORS(controller.Lists))
 
@@ -161,14 +165,16 @@ func (me *HttpServer) Start(ctx context.Context) (err error) {
 		err = errors.New("Invalid web scheme")
 	}
 
-	logrus.WithFields(logrus.Fields{
-		"error": err,
-	}).Error(util.Message("Fail to start http server"))
+	if err != nil {
+		logrus.WithFields(logrus.Fields{
+			"error": err,
+		}).Error(util.Message("http server error"))
+	}
 
 	return err
 }
 
-func (me *HttpServer) Shutdown(ctx context.Context) error {
+func (me *HTTPServer) Shutdown(ctx context.Context) error {
 	err := me.httpSrv.Shutdown(ctx)
 
 	if err != nil {
@@ -180,14 +186,13 @@ func (me *HttpServer) Shutdown(ctx context.Context) error {
 	return err
 }
 
-func NewHttpServer() *HttpServer {
-	return &HttpServer{}
+func NewHTTPServer() *HTTPServer {
+	return &HTTPServer{}
 }
 
 func listenToSystemSignals(server Server) {
 	signalChan := make(chan os.Signal, 1)
 	ignoreChan := make(chan os.Signal, 1)
-	code := 0
 
 	signal.Notify(ignoreChan, syscall.SIGHUP)
 	signal.Notify(signalChan, os.Interrupt, os.Kill, syscall.SIGTERM)
@@ -197,7 +202,5 @@ func listenToSystemSignals(server Server) {
 		// Stops trace if profiling has been enabled
 		trace.Stop()
 		server.Shutdown(0, fmt.Sprintf("system signal: %s", sig))
-	case code = <-exitChan:
-		server.Shutdown(code, "startup error")
 	}
 }

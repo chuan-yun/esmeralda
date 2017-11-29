@@ -9,6 +9,8 @@ import (
 	"runtime"
 	"runtime/trace"
 
+	_ "net/http/pprof"
+
 	"chuanyun.io/esmeralda/server"
 )
 
@@ -45,7 +47,7 @@ func main() {
 	if *profiling {
 		runtime.SetBlockProfileRate(1)
 		go func() {
-			http.ListenAndServe(fmt.Sprintf("localhost:%d", *profilingPort), nil)
+			http.ListenAndServe(fmt.Sprintf("0.0.0.0:%d", *profilingPort), nil)
 		}()
 
 		f, err := os.Create("trace.out")
