@@ -18,6 +18,7 @@ import (
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 	"github.com/sirupsen/logrus"
 
+	"chuanyun.io/esmeralda/collector"
 	"chuanyun.io/esmeralda/controller"
 	"chuanyun.io/esmeralda/setting"
 	"chuanyun.io/esmeralda/util"
@@ -76,7 +77,6 @@ func (me *EsmeraldaServerImpl) Shutdown(code int, reason string) {
 		"code":   code,
 	}).Info("Shutdown server completed")
 
-	// logrus.Exit(code) will call os.Exit(code)
 	logrus.Exit(code)
 }
 
@@ -139,7 +139,7 @@ func (me *HTTPServer) Start(ctx context.Context) (err error) {
 	listenAddr := fmt.Sprintf("%s:%s", setting.Settings.Web.Address, strconv.FormatInt(setting.Settings.Web.Port, 10))
 
 	router := httprouter.New()
-	router.GET(setting.Settings.Web.Prefix+"/collector/log", controller.Collect)
+	router.GET(setting.Settings.Web.Prefix+"/collector/log", collector.HTTPCollector)
 
 	router.Handler("GET", setting.Settings.Web.Prefix+"/metrics", promhttp.Handler())
 
