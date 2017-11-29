@@ -32,9 +32,5 @@ func InitializeElasticClient() {
 		logrus.WithFields(logrus.Fields{
 			"error": err,
 		}).Fatal(util.Message("Initialize elasticsearch client connections failed"))
-	} else {
-		logrus.WithFields(logrus.Fields{
-			"clients": Settings.Elasticsearch.Client,
-		}).Info(Settings.Elasticsearch.Client)
 	}
 }
