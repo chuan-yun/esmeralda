@@ -119,18 +119,6 @@ func (me *EsmeraldaServerImpl) writePIDFile() {
 	}).Info("Writing PID file")
 }
 
-func (me *EsmeraldaServerImpl) startCollectorServer() {
-
-	me.collectorServer = NewCollectorServer()
-	err := me.collectorServer.Start(me.context)
-
-	if err != nil {
-		me.Shutdown(1, "Startup http server failed")
-
-		return
-	}
-}
-
 func (me *EsmeraldaServerImpl) startHTTPServer() {
 
 	me.httpServer = NewHTTPServer()
