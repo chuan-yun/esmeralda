@@ -76,7 +76,7 @@ type Document struct {
 
 type DocumentQueue []Document
 
-func (span *Span) AssembleDocument() (doc Document, err error) {
+func (span *Span) AssembleDocument() (doc *Document, err error) {
 	spanJSON, err := span.ToJson()
 	if err != nil {
 		return doc, err

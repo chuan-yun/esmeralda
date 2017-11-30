@@ -15,6 +15,7 @@ import (
 
 type CollectorService struct {
 	SpansProcessingChan chan *[]trace.Span
+	DocumentChan        chan *trace.Document
 	Cache               *gocache.Cache
 }
 
@@ -28,11 +29,11 @@ func newCollectorService() *CollectorService {
 	return collectorService
 }
 
-func (me *CollectorService) Run(ctx context.Context) error {
+func RunCollectorService(ctx context.Context) error {
 	logrus.Info("Initializing CollectorService")
 
 	group, _ := errgroup.WithContext(ctx)
-	group.Go(func() error { return me.SpansToDocument(ctx) })
+	group.Go(func() error { return SpansToDocument(ctx) })
 
 	err := group.Wait()
 
@@ -41,8 +42,7 @@ func (me *CollectorService) Run(ctx context.Context) error {
 	return err
 }
 
-func (service *CollectorService) SpansToDocument(ctx context.Context) error {
-
+func SpansToDocument(ctx context.Context) error {
 	for {
 		select {
 		case spans := <-Collector.SpansProcessingChan:
@@ -55,7 +55,7 @@ func (service *CollectorService) SpansToDocument(ctx context.Context) error {
 					}).Warn(util.Message("span encode to json error"))
 					continue
 				}
-				logrus.Info(doc)
+				Collector.DocumentChan <- doc
 			}
 		case <-ctx.Done():
 			logrus.Info(util.Message("done"))
