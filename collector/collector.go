@@ -72,6 +72,7 @@ func SpansToDocumentQueue(ctx context.Context) error {
 					logrus.Info(util.Message(""))
 					Collector.DocumentQueueChan <- Collector.DocumentQueue.Queue
 					Collector.DocumentQueue.Queue = []trace.Document{}
+					logrus.Info(util.Message(""))
 				}
 				logrus.Info(util.Message(""))
 				Collector.DocumentQueue.Mux.Unlock()
