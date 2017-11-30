@@ -36,6 +36,8 @@ func (me *CollectorService) Run(ctx context.Context) error {
 
 	err := group.Wait()
 
+	logrus.Info("Done CollectorService")
+
 	return err
 }
 
