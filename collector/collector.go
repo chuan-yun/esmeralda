@@ -3,6 +3,7 @@ package collector
 import (
 	"context"
 	"net/http"
+	"sync"
 	"time"
 
 	"chuanyun.io/esmeralda/collector/trace"
@@ -15,8 +16,12 @@ import (
 
 type CollectorService struct {
 	SpansProcessingChan chan *[]trace.Span
-	DocumentChan        chan *trace.Document
-	Cache               *gocache.Cache
+	DocumentQueueChan   chan []trace.Document
+	DocumentQueue       struct {
+		Queue []trace.Document
+		Mux   sync.Mutex
+	}
+	Cache *gocache.Cache
 }
 
 var Collector = newCollectorService()
@@ -33,7 +38,8 @@ func RunCollectorService(ctx context.Context) error {
 	logrus.Info("Initializing CollectorService")
 
 	group, _ := errgroup.WithContext(ctx)
-	group.Go(func() error { return SpansToDocument(ctx) })
+	group.Go(func() error { return SpansToDocumentQueue(ctx) })
+	group.Go(func() error { return BulkSaveDocument(ctx) })
 
 	err := group.Wait()
 
@@ -42,7 +48,7 @@ func RunCollectorService(ctx context.Context) error {
 	return err
 }
 
-func SpansToDocument(ctx context.Context) error {
+func SpansToDocumentQueue(ctx context.Context) error {
 	for {
 		select {
 		case spans := <-Collector.SpansProcessingChan:
@@ -55,8 +61,27 @@ func SpansToDocument(ctx context.Context) error {
 					}).Warn(util.Message("span encode to json error"))
 					continue
 				}
-				Collector.DocumentChan <- doc
+				Collector.DocumentQueue.Mux.Lock()
+				if len(Collector.DocumentQueue.Queue) < 2000 {
+					Collector.DocumentQueue.Queue = append(Collector.DocumentQueue.Queue, *doc)
+				} else {
+					Collector.DocumentQueueChan <- Collector.DocumentQueue.Queue
+					Collector.DocumentQueue.Queue = []trace.Document{}
+				}
+				Collector.DocumentQueue.Mux.Unlock()
 			}
+		case <-ctx.Done():
+			logrus.Info(util.Message("done"))
+			return ctx.Err()
+		}
+	}
+}
+
+func BulkSaveDocument(ctx context.Context) error {
+	for {
+		select {
+		case queue := <-Collector.DocumentQueueChan:
+			logrus.Info(queue)
 		case <-ctx.Done():
 			logrus.Info(util.Message("done"))
 			return ctx.Err()
