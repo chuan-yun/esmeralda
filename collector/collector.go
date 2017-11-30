@@ -62,7 +62,7 @@ func SpansToDocumentQueue(ctx context.Context) error {
 					continue
 				}
 				Collector.DocumentQueue.Mux.Lock()
-				if len(Collector.DocumentQueue.Queue) < 2000 {
+				if len(Collector.DocumentQueue.Queue) < 2 {
 					Collector.DocumentQueue.Queue = append(Collector.DocumentQueue.Queue, *doc)
 				} else {
 					Collector.DocumentQueueChan <- Collector.DocumentQueue.Queue
