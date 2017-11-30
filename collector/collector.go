@@ -52,7 +52,9 @@ func SpansToDocumentQueue(ctx context.Context) error {
 	for {
 		select {
 		case spans := <-Collector.SpansProcessingChan:
+			logrus.Info(util.Message(""))
 			for index := range *spans {
+				logrus.Info(util.Message(""))
 				doc, err := (*spans)[index].AssembleDocument()
 				if err != nil {
 					logrus.WithFields(logrus.Fields{
@@ -61,17 +63,21 @@ func SpansToDocumentQueue(ctx context.Context) error {
 					}).Warn(util.Message("span encode to json error"))
 					continue
 				}
+				logrus.Info(util.Message(""))
 				Collector.DocumentQueue.Mux.Lock()
 				if len(Collector.DocumentQueue.Queue) < 2 {
+					logrus.Info(util.Message(""))
 					Collector.DocumentQueue.Queue = append(Collector.DocumentQueue.Queue, *doc)
 				} else {
+					logrus.Info(util.Message(""))
 					Collector.DocumentQueueChan <- Collector.DocumentQueue.Queue
 					Collector.DocumentQueue.Queue = []trace.Document{}
 				}
+				logrus.Info(util.Message(""))
 				Collector.DocumentQueue.Mux.Unlock()
 			}
 		case <-ctx.Done():
-			logrus.Info(util.Message("done"))
+			logrus.Info(util.Message("Done SpansToDocumentQueue"))
 			return ctx.Err()
 		}
 	}
@@ -81,9 +87,10 @@ func BulkSaveDocument(ctx context.Context) error {
 	for {
 		select {
 		case queue := <-Collector.DocumentQueueChan:
+			logrus.Info(util.Message(""))
 			logrus.Info(queue)
 		case <-ctx.Done():
-			logrus.Info(util.Message("done"))
+			logrus.Info(util.Message("Done BulkSaveDocument"))
 			return ctx.Err()
 		}
 	}
