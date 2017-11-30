@@ -72,7 +72,7 @@ func (me *EsmeraldaServerImpl) Shutdown(code int, reason string) {
 	if err = me.childRoutines.Wait(); err != nil {
 		logrus.WithFields(logrus.Fields{
 			"error": err,
-		}).Info("Failed to shutdown childRoutines")
+		}).Info("Shutdown childRoutines")
 	}
 
 	logrus.WithFields(logrus.Fields{

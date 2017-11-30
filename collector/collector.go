@@ -32,7 +32,7 @@ func (me *CollectorService) Run(ctx context.Context) error {
 	logrus.Info("Initializing CollectorService")
 
 	group, _ := errgroup.WithContext(ctx)
-	group.Go(func() error { return me.start(ctx) })
+	group.Go(func() error { return me.SpansToDocument(ctx) })
 
 	err := group.Wait()
 
@@ -41,7 +41,7 @@ func (me *CollectorService) Run(ctx context.Context) error {
 	return err
 }
 
-func (service *CollectorService) start(ctx context.Context) error {
+func (service *CollectorService) SpansToDocument(ctx context.Context) error {
 
 	for {
 		select {
