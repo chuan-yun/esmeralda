@@ -1,31 +1,15 @@
 package collector
 
 import (
-	"context"
 	"net/http"
 
 	"chuanyun.io/esmeralda/collector/trace"
 	"chuanyun.io/esmeralda/util"
 	"github.com/julienschmidt/httprouter"
 	"github.com/sirupsen/logrus"
-	"golang.org/x/sync/errgroup"
 )
 
 var SpansProcessingChan = make(chan *[]trace.Span)
-
-type CollectorServerImpl struct {
-	context       context.Context
-	shutdownFn    context.CancelFunc
-	childRoutines *errgroup.Group
-}
-
-func (me *CollectorServerImpl) Start() {
-
-}
-
-func (me *CollectorServerImpl) Shutdown(code int, reason string) {
-
-}
 
 func HTTPCollector(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
 
@@ -42,15 +26,17 @@ func HTTPCollector(w http.ResponseWriter, r *http.Request, _ httprouter.Params) 
 			"error": err,
 			"trace": body,
 		}).Warn("main: trace log decode to json error")
-	}
 
-	logrus.Info(spans)
+		w.Write([]byte(`{"msg": "error trace log"}`))
+
+		return
+	}
 
 	select {
 	case SpansProcessingChan <- spans:
-		w.Write([]byte(`{"error": "SpansProcessingChan <- spans"}`))
+		w.Write([]byte(`{"msg": "SpansProcessingChan <- spans"}`))
 	default:
-		w.Write([]byte(`{"error": "default"}`))
+		w.Write([]byte(`{"msg": "default"}`))
 	}
 }
 
@@ -72,60 +58,3 @@ func SpansToDoc() {
 		}
 	}()
 }
-
-// func saveDoc(docCh <-chan elasticsearch.Document) error {
-// 	go func() {
-// 		for document := range SpansProcessingChan {
-// 			cacheKey := document.IndexName + document.TypeName
-
-// 			_, found := indexCache.Get(cacheKey)
-// 			if found {
-// 				// logrus.Info("main: index:" + indexName + " exists.")
-// 			} else {
-// 				// Use the IndexExists service to check if a specified index exists.
-// 				exists, err := elasticsearchClient.IndexExists(document.IndexName).Do(ctx)
-// 				if err != nil {
-// 					logrus.Fatal(err)
-// 				}
-// 				if !exists {
-
-// 					createIndex, err := elasticsearchClient.CreateIndex(document.IndexName).BodyString(elasticsearch.Mappings[document.IndexBaseName]).Do(ctx)
-// 					if err != nil {
-// 						logrus.Warn(err)
-// 						continue
-// 					}
-// 					if !createIndex.Acknowledged {
-// 						// Not acknowledged
-// 					}
-// 				}
-// 				indexCache.Set(cacheKey, true, cache.DefaultExpiration)
-
-// 				// aliasService := elastic.NewAliasService(elasticsearchClient)
-// 				// aliasService.Add(document.IndexName, "alias-"+document.IndexName)
-// 			}
-
-// 			indexRequest := elastic.NewBulkIndexRequest().Index(document.IndexName).Type(document.TypeName).Doc(document.Payload)
-// 			bulkRequest = bulkRequest.Add(indexRequest)
-// 		}
-
-// 		bulkResponse, err := bulkRequest.Do(ctx)
-// 		if err != nil {
-// 			logrus.Fatal(err)
-// 		}
-// 		if bulkResponse == nil {
-// 			logrus.Fatal("main: expected bulkResponse to be != nil; got nil")
-// 		}
-
-// 		indexed := bulkResponse.Indexed()
-
-// 		if len(indexed) > 0 {
-// 			for _, value := range indexed {
-// 				if value.Status != 201 {
-// 					logrus.Error("main: document bulk index error:" + value.Index)
-// 				}
-// 			}
-// 		}
-// 	}()
-
-// 	return nil
-// }
