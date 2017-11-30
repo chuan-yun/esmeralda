@@ -56,6 +56,7 @@ func (service *CollectorService) start(ctx context.Context) error {
 				logrus.Info(doc)
 			}
 		case <-ctx.Done():
+			logrus.Info(util.Message("done"))
 			return ctx.Err()
 		}
 	}
