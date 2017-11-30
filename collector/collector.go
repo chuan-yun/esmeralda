@@ -38,8 +38,8 @@ func RunCollectorService(ctx context.Context) error {
 	logrus.Info("Initializing CollectorService")
 
 	group, _ := errgroup.WithContext(ctx)
-	group.Go(func() error { return SpansToDocumentQueue(ctx) })
 	group.Go(func() error { return BulkSaveDocument(ctx) })
+	group.Go(func() error { return SpansToDocumentQueue(ctx) })
 
 	err := group.Wait()
 
