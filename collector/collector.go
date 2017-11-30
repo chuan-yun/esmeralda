@@ -34,11 +34,9 @@ func (me *CollectorService) Run(ctx context.Context) error {
 	group, _ := errgroup.WithContext(ctx)
 	group.Go(func() error { return me.start(ctx) })
 
-	err := group.Wait()
-
 	logrus.Info("Done CollectorService")
 
-	return err
+	return nil
 }
 
 func (service *CollectorService) start(ctx context.Context) error {
