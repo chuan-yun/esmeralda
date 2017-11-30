@@ -76,14 +76,14 @@ type Document struct {
 
 type DocumentQueue []Document
 
-func (span *Span) AssembleDocument() (doc *Document, err error) {
+func (span *Span) AssembleDocument() (*Document, error) {
 	spanJSON, err := span.ToJson()
 	if err != nil {
-		return doc, err
+		return nil, err
 	}
+	doc := &Document{Payload: spanJSON}
 
 	doc.IndexName, doc.TypeName, doc.IndexBaseName = span.GetStoreMeta()
-	doc.Payload = spanJSON
 
 	return doc, nil
 }
