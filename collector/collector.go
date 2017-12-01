@@ -31,6 +31,7 @@ func newCollectorService() *CollectorService {
 	collectorService := &CollectorService{}
 	collectorService.Cache = gocache.New(60*time.Second, 60*time.Second)
 	collectorService.SpansProcessingChan = make(chan *[]trace.Span)
+	collectorService.DocumentQueueChan = make(chan []trace.Document)
 
 	return collectorService
 }
