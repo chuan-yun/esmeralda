@@ -1,6 +1,6 @@
 package storage
 
-const chuanyun = `
+const trace = `
 {
     "settings": {
         "index": {
@@ -180,5 +180,5 @@ const chuanyun = `
 `
 
 var Mappings = map[string]string{
-	"chuanyun": chuanyun,
+	"trace": trace,
 }

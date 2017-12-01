@@ -61,10 +61,10 @@ func (span *Span) GetStoreMeta() (indexName string, typeName string, indexBaseNa
 		date = time.Unix(0, microsecond*int64(time.Microsecond)).Local().Format("20060102")
 	}
 
-	indexName = "chuanyun" + "-" + date
+	indexName = "trace" + "-" + date
 	typeName = "span"
 
-	return indexName, typeName, "chuanyun"
+	return indexName, typeName, "trace"
 }
 
 type Document struct {
