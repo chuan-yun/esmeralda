@@ -96,7 +96,6 @@ func BulkSaveDocument(ctx context.Context) error {
 			return ctx.Err()
 		}
 	}
-	logrus.Info(util.Message("start"))
 }
 
 func HTTPCollector(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
