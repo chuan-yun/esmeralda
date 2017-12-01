@@ -6,12 +6,15 @@ import (
 	"sync"
 	"time"
 
+	"chuanyun.io/esmeralda/collector/storage"
 	"chuanyun.io/esmeralda/collector/trace"
+	"chuanyun.io/esmeralda/setting"
 	"chuanyun.io/esmeralda/util"
 	"github.com/julienschmidt/httprouter"
 	gocache "github.com/patrickmn/go-cache"
 	"github.com/sirupsen/logrus"
 	"golang.org/x/sync/errgroup"
+	elastic "gopkg.in/olivere/elastic.v5"
 )
 
 type CollectorService struct {
@@ -19,12 +22,8 @@ type CollectorService struct {
 	Cache               *gocache.Cache
 	SpansProcessingChan chan *[]trace.Span
 	DocumentQueueChan   chan []trace.Document
-	DocumentQueue       DocumentQueue
-}
-
-type DocumentQueue struct {
-	Queue []trace.Document
-	Mux   *sync.Mutex
+	DocumentQueue       []trace.Document
+	Mux                 *sync.Mutex
 }
 
 var Service = NewCollectorService()
@@ -34,10 +33,8 @@ func NewCollectorService() *CollectorService {
 		Cache:               gocache.New(60*time.Second, 60*time.Second),
 		SpansProcessingChan: make(chan *[]trace.Span),
 		DocumentQueueChan:   make(chan []trace.Document),
-		DocumentQueue: DocumentQueue{
-			Queue: []trace.Document{},
-			Mux:   &sync.Mutex{},
-		},
+		DocumentQueue:       []trace.Document{},
+		Mux:                 &sync.Mutex{},
 	}
 }
 
@@ -58,30 +55,36 @@ func (service *CollectorService) Run(ctx context.Context) error {
 }
 
 func (service *CollectorService) queueRoutine(ctx context.Context) error {
+	logrus.Info(util.Message("Start queue routine"))
+
+	var assignSpansToQueue = func(spans *[]trace.Span) {
+
+		for _, span := range *spans {
+			doc, err := span.AssembleDocument()
+			if err != nil {
+				logrus.WithFields(logrus.Fields{
+					"error": err,
+					"span":  span,
+				}).Warn(util.Message("span encode to json error"))
+				continue
+			}
+			service.Mux.Lock()
+			if len(service.DocumentQueue) < 2 {
+				service.DocumentQueue = append(service.DocumentQueue, *doc)
+			} else {
+				// var queue = make([]trace.Document, len(service.DocumentQueue))
+				// copy(queue, service.DocumentQueue)
+				service.DocumentQueueChan <- service.DocumentQueue
+				service.DocumentQueue = []trace.Document{}
+			}
+			service.Mux.Unlock()
+		}
+	}
+
 	for {
 		select {
 		case spans := <-Service.SpansProcessingChan:
-			for index := range *spans {
-				doc, err := (*spans)[index].AssembleDocument()
-				if err != nil {
-					logrus.WithFields(logrus.Fields{
-						"error": err,
-						"span":  (*spans)[index],
-					}).Warn(util.Message("span encode to json error"))
-					continue
-				}
-				service.DocumentQueue.Mux.Lock()
-				if len(service.DocumentQueue.Queue) < 2 {
-					service.DocumentQueue.Queue = append(service.DocumentQueue.Queue, *doc)
-				} else {
-					var queue = make([]trace.Document, len(service.DocumentQueue.Queue))
-					copy(queue, service.DocumentQueue.Queue)
-					service.DocumentQueueChan <- queue
-					service.DocumentQueue.Queue = []trace.Document{}
-
-				}
-				service.DocumentQueue.Mux.Unlock()
-			}
+			assignSpansToQueue(spans)
 		case <-ctx.Done():
 			logrus.Info(util.Message("Done SpansToDocumentQueue"))
 			return ctx.Err()
@@ -90,13 +93,82 @@ func (service *CollectorService) queueRoutine(ctx context.Context) error {
 }
 
 func (service *CollectorService) documentRoutine(ctx context.Context) error {
-	logrus.Info(util.Message("start"))
+	logrus.Info(util.Message("Start document routine"))
+
+	var bulkSaveDocument = func(documents *[]trace.Document) {
+
+		bulkRequest := setting.Settings.Elasticsearch.Client.Bulk()
+
+		for _, document := range *documents {
+			cacheKey := document.IndexName + document.TypeName
+
+			if _, found := service.Cache.Get(cacheKey); !found {
+				exists, err := setting.Settings.Elasticsearch.Client.IndexExists(document.IndexName).Do(ctx)
+				if err != nil {
+					logrus.WithFields(logrus.Fields{
+						"error": err,
+						"index": document.IndexName,
+					}).Warn(util.Message("index exists query error"))
+					continue
+				}
+				if !exists {
+					createIndex, err := setting.Settings.Elasticsearch.Client.CreateIndex(document.IndexName).BodyString(storage.Mappings[document.IndexBaseName]).Do(ctx)
+					if err != nil {
+						logrus.WithFields(logrus.Fields{
+							"error": err,
+							"index": document.IndexName,
+						}).Warn(util.Message("index create error"))
+						continue
+					}
+					if !createIndex.Acknowledged {
+						logrus.WithFields(logrus.Fields{
+							"error": err,
+							"index": document.IndexName,
+						}).Warn(util.Message("index create not acknowledged"))
+						continue
+					}
+				}
+				service.Cache.Set(cacheKey, true, gocache.DefaultExpiration)
+			}
+
+			indexRequest := elastic.NewBulkIndexRequest().Index(document.IndexName).Type(document.TypeName).Doc(document.Payload)
+			bulkRequest = bulkRequest.Add(indexRequest)
+		}
+
+		bulkResponse, err := bulkRequest.Do(ctx)
+		if err != nil {
+			logrus.WithFields(logrus.Fields{
+				"error": err,
+			}).Warn(util.Message("bulk save documents error"))
+
+			return
+		}
+		if bulkResponse == nil {
+			logrus.WithFields(logrus.Fields{
+				"error": err,
+			}).Warn(util.Message("bulk save documents response error"))
+			return
+		}
+
+		indexed := bulkResponse.Indexed()
+
+		if len(indexed) > 0 {
+			for _, value := range indexed {
+				if value.Status != 201 {
+					logrus.WithFields(logrus.Fields{
+						"status": value.Status,
+						"index":  value.Index,
+						"error":  value.Error,
+					}).Warn(util.Message("bulk save documents value state error"))
+				}
+			}
+		}
+	}
+
 	for {
 		select {
 		case queue := <-Service.DocumentQueueChan:
-			logrus.WithFields(logrus.Fields{
-				"queue": queue,
-			}).Info(queue)
+			bulkSaveDocument(&queue)
 		case <-ctx.Done():
 			logrus.Info(util.Message("Done BulkSaveDocument"))
 			return ctx.Err()
