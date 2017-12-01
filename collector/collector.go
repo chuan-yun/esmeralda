@@ -64,7 +64,7 @@ func SpansToDocumentQueue(ctx context.Context) error {
 					continue
 				}
 				logrus.Info(util.Message(""))
-				Collector.DocumentQueue.Mux.Lock()
+				// Collector.DocumentQueue.Mux.Lock()
 				if len(Collector.DocumentQueue.Queue) < 2 {
 					logrus.Info(util.Message(""))
 					Collector.DocumentQueue.Queue = append(Collector.DocumentQueue.Queue, *doc)
@@ -75,7 +75,7 @@ func SpansToDocumentQueue(ctx context.Context) error {
 					logrus.Info(util.Message(""))
 				}
 				logrus.Info(util.Message(""))
-				Collector.DocumentQueue.Mux.Unlock()
+				// Collector.DocumentQueue.Mux.Unlock()
 			}
 		case <-ctx.Done():
 			logrus.Info(util.Message("Done SpansToDocumentQueue"))
