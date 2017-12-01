@@ -12,6 +12,7 @@ import (
 	"chuanyun.io/esmeralda/util"
 	"github.com/julienschmidt/httprouter"
 	gocache "github.com/patrickmn/go-cache"
+	"github.com/prometheus/client_golang/prometheus"
 	"github.com/sirupsen/logrus"
 	"golang.org/x/sync/errgroup"
 	elastic "gopkg.in/olivere/elastic.v5"
@@ -29,6 +30,7 @@ type CollectorService struct {
 var Service = NewCollectorService()
 
 func NewCollectorService() *CollectorService {
+
 	return &CollectorService{
 		Cache:               gocache.New(60*time.Second, 60*time.Second),
 		SpansProcessingChan: make(chan *[]trace.Span),
@@ -39,6 +41,16 @@ func NewCollectorService() *CollectorService {
 }
 
 func (service *CollectorService) Run(ctx context.Context) error {
+
+	logCollectMetric := prometheus.NewGaugeVec(
+		prometheus.GaugeOpts{
+			Name: "kafka_broker_consumer_group_current_offset",
+			Help: "Consuming offset of each consumer group/topic/partition based on committed offset",
+		},
+		[]string{"topic", "partition", "group"},
+	)
+
+	prometheus.MustRegister(logCollectMetric)
 
 	service.context = ctx
 	logrus.Info("Initializing CollectorService")
