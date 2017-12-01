@@ -17,14 +17,15 @@ import (
 type CollectorService struct {
 	SpansProcessingChan chan *[]trace.Span
 	DocumentQueueChan   chan []trace.Document
-	DocumentQueue       struct {
-		Queue []trace.Document
-		Mux   sync.Mutex
-	}
-	Cache *gocache.Cache
+	Cache               *gocache.Cache
 }
 
 var Collector = newCollectorService()
+
+var DocumentQueue struct {
+	Queue []trace.Document
+	Mux   sync.Mutex
+}
 
 func newCollectorService() *CollectorService {
 	collectorService := &CollectorService{}
@@ -38,8 +39,8 @@ func RunCollectorService(ctx context.Context) error {
 	logrus.Info("Initializing CollectorService")
 
 	group, _ := errgroup.WithContext(ctx)
-	group.Go(func() error { return BulkSaveDocument(ctx) })
-	group.Go(func() error { return SpansToDocumentQueue(ctx) })
+	group.Go(func() error { return BulkSaveDocumentRoutine(ctx) })
+	group.Go(func() error { return spansToDocumentQueueRoutine(ctx) })
 
 	err := group.Wait()
 
@@ -48,7 +49,7 @@ func RunCollectorService(ctx context.Context) error {
 	return err
 }
 
-func SpansToDocumentQueue(ctx context.Context) error {
+func spansToDocumentQueueRoutine(ctx context.Context) error {
 	for {
 		select {
 		case spans := <-Collector.SpansProcessingChan:
@@ -64,18 +65,20 @@ func SpansToDocumentQueue(ctx context.Context) error {
 					continue
 				}
 				logrus.Info(util.Message(""))
-				// Collector.DocumentQueue.Mux.Lock()
-				if len(Collector.DocumentQueue.Queue) < 2 {
+				DocumentQueue.Mux.Lock()
+				if len(DocumentQueue.Queue) < 2 {
 					logrus.Info(util.Message(""))
-					Collector.DocumentQueue.Queue = append(Collector.DocumentQueue.Queue, *doc)
+					DocumentQueue.Queue = append(DocumentQueue.Queue, *doc)
 				} else {
 					logrus.Info(util.Message(""))
-					Collector.DocumentQueueChan <- Collector.DocumentQueue.Queue
-					Collector.DocumentQueue.Queue = []trace.Document{}
+					var c = []trace.Document{}
+					copy(c, DocumentQueue.Queue)
+					Collector.DocumentQueueChan <- c
+					DocumentQueue.Queue = []trace.Document{}
 					logrus.Info(util.Message(""))
 				}
 				logrus.Info(util.Message(""))
-				// Collector.DocumentQueue.Mux.Unlock()
+				DocumentQueue.Mux.Unlock()
 			}
 		case <-ctx.Done():
 			logrus.Info(util.Message("Done SpansToDocumentQueue"))
@@ -84,7 +87,7 @@ func SpansToDocumentQueue(ctx context.Context) error {
 	}
 }
 
-func BulkSaveDocument(ctx context.Context) error {
+func BulkSaveDocumentRoutine(ctx context.Context) error {
 	logrus.Info(util.Message("start"))
 	for {
 		select {
