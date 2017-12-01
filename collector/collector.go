@@ -81,6 +81,8 @@ func (service *CollectorService) queueRoutine(ctx context.Context) error {
 					logrus.Info(util.Message(""))
 					var c = []trace.Document{}
 					copy(c, service.DocumentQueue.Queue)
+					logrus.Info(c)
+					logrus.Info(service.DocumentQueue.Queue)
 					service.DocumentQueueChan <- c
 					service.DocumentQueue.Queue = []trace.Document{}
 					logrus.Info(util.Message(""))
