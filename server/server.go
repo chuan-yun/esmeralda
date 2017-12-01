@@ -49,6 +49,9 @@ func (me *EsmeraldaServerImpl) Start() {
 	setting.InitializeElasticClient()
 
 	me.writePIDFile()
+
+	me.childRoutines.Go(func() error { return collector.Service.Run(me.context) })
+
 	me.startHTTPServer()
 }
 
@@ -69,7 +72,7 @@ func (me *EsmeraldaServerImpl) Shutdown(code int, reason string) {
 	if err = me.childRoutines.Wait(); err != nil {
 		logrus.WithFields(logrus.Fields{
 			"error": err,
-		}).Info("Failed to shutdown childRoutines")
+		}).Info("Shutdown childRoutines")
 	}
 
 	logrus.WithFields(logrus.Fields{
@@ -139,7 +142,7 @@ func (me *HTTPServer) Start(ctx context.Context) (err error) {
 	listenAddr := fmt.Sprintf("%s:%s", setting.Settings.Web.Address, strconv.FormatInt(setting.Settings.Web.Port, 10))
 
 	router := httprouter.New()
-	router.GET(setting.Settings.Web.Prefix+"/collector/log", collector.HTTPCollector)
+	router.POST(setting.Settings.Web.Prefix+"/collector/log", collector.HTTPCollector)
 
 	router.GET(setting.Settings.Web.Prefix+"/traces", util.CORS(controller.Lists))
 
