@@ -15,33 +15,40 @@ import (
 )
 
 type CollectorService struct {
+	context             context.Context
+	Cache               *gocache.Cache
 	SpansProcessingChan chan *[]trace.Span
 	DocumentQueueChan   chan []trace.Document
-	Cache               *gocache.Cache
+	DocumentQueue       DocumentQueue
 }
 
-var Collector = newCollectorService()
-
-var DocumentQueue struct {
+type DocumentQueue struct {
 	Queue []trace.Document
-	Mux   sync.Mutex
+	Mux   *sync.Mutex
 }
 
-func newCollectorService() *CollectorService {
-	collectorService := &CollectorService{}
-	collectorService.Cache = gocache.New(60*time.Second, 60*time.Second)
-	collectorService.SpansProcessingChan = make(chan *[]trace.Span)
-	collectorService.DocumentQueueChan = make(chan []trace.Document)
+var Service = NewCollectorService()
 
-	return collectorService
+func NewCollectorService() *CollectorService {
+	return &CollectorService{
+		Cache:               gocache.New(60*time.Second, 60*time.Second),
+		SpansProcessingChan: make(chan *[]trace.Span),
+		DocumentQueueChan:   make(chan []trace.Document),
+		DocumentQueue: DocumentQueue{
+			Queue: []trace.Document{},
+			Mux:   &sync.Mutex{},
+		},
+	}
 }
 
-func RunCollectorService(ctx context.Context) error {
+func (service *CollectorService) Run(ctx context.Context) error {
+
+	service.context = ctx
 	logrus.Info("Initializing CollectorService")
 
 	group, _ := errgroup.WithContext(ctx)
-	group.Go(func() error { return BulkSaveDocumentRoutine(ctx) })
-	group.Go(func() error { return spansToDocumentQueueRoutine(ctx) })
+	group.Go(func() error { return service.queueRoutine(ctx) })
+	group.Go(func() error { return service.documentRoutine(ctx) })
 
 	err := group.Wait()
 
@@ -50,10 +57,10 @@ func RunCollectorService(ctx context.Context) error {
 	return err
 }
 
-func spansToDocumentQueueRoutine(ctx context.Context) error {
+func (service *CollectorService) queueRoutine(ctx context.Context) error {
 	for {
 		select {
-		case spans := <-Collector.SpansProcessingChan:
+		case spans := <-Service.SpansProcessingChan:
 			logrus.Info(util.Message(""))
 			for index := range *spans {
 				logrus.Info(util.Message(""))
@@ -66,20 +73,20 @@ func spansToDocumentQueueRoutine(ctx context.Context) error {
 					continue
 				}
 				logrus.Info(util.Message(""))
-				DocumentQueue.Mux.Lock()
-				if len(DocumentQueue.Queue) < 2 {
+				service.DocumentQueue.Mux.Lock()
+				if len(service.DocumentQueue.Queue) < 2 {
 					logrus.Info(util.Message(""))
-					DocumentQueue.Queue = append(DocumentQueue.Queue, *doc)
+					service.DocumentQueue.Queue = append(service.DocumentQueue.Queue, *doc)
 				} else {
 					logrus.Info(util.Message(""))
 					var c = []trace.Document{}
-					copy(c, DocumentQueue.Queue)
-					Collector.DocumentQueueChan <- c
-					DocumentQueue.Queue = []trace.Document{}
+					copy(c, service.DocumentQueue.Queue)
+					service.DocumentQueueChan <- c
+					service.DocumentQueue.Queue = []trace.Document{}
 					logrus.Info(util.Message(""))
 				}
 				logrus.Info(util.Message(""))
-				DocumentQueue.Mux.Unlock()
+				service.DocumentQueue.Mux.Unlock()
 			}
 		case <-ctx.Done():
 			logrus.Info(util.Message("Done SpansToDocumentQueue"))
@@ -88,13 +95,14 @@ func spansToDocumentQueueRoutine(ctx context.Context) error {
 	}
 }
 
-func BulkSaveDocumentRoutine(ctx context.Context) error {
+func (service *CollectorService) documentRoutine(ctx context.Context) error {
 	logrus.Info(util.Message("start"))
 	for {
 		select {
-		case queue := <-Collector.DocumentQueueChan:
-			logrus.Info(util.Message(""))
-			logrus.Info(queue)
+		case queue := <-Service.DocumentQueueChan:
+			logrus.WithFields(logrus.Fields{
+				"queue": queue,
+			}).Info(queue)
 		case <-ctx.Done():
 			logrus.Info(util.Message("Done BulkSaveDocument"))
 			return ctx.Err()
@@ -124,7 +132,7 @@ func HTTPCollector(w http.ResponseWriter, r *http.Request, _ httprouter.Params) 
 	}
 
 	select {
-	case Collector.SpansProcessingChan <- spans:
+	case Service.SpansProcessingChan <- spans:
 		w.Write([]byte(`{"msg": "SpansProcessingChan <- spans"}`))
 	default:
 		w.Write([]byte(`{"msg": "default"}`))

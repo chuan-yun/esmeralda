@@ -50,7 +50,7 @@ func (me *EsmeraldaServerImpl) Start() {
 
 	me.writePIDFile()
 
-	me.childRoutines.Go(func() error { return collector.RunCollectorService(me.context) })
+	me.childRoutines.Go(func() error { return collector.Service.Run(me.context) })
 
 	me.startHTTPServer()
 }
