@@ -61,9 +61,7 @@ func (service *CollectorService) queueRoutine(ctx context.Context) error {
 	for {
 		select {
 		case spans := <-Service.SpansProcessingChan:
-			logrus.Info(util.Message(""))
 			for index := range *spans {
-				logrus.Info(util.Message(""))
 				doc, err := (*spans)[index].AssembleDocument()
 				if err != nil {
 					logrus.WithFields(logrus.Fields{
@@ -72,22 +70,16 @@ func (service *CollectorService) queueRoutine(ctx context.Context) error {
 					}).Warn(util.Message("span encode to json error"))
 					continue
 				}
-				logrus.Info(util.Message(""))
 				service.DocumentQueue.Mux.Lock()
 				if len(service.DocumentQueue.Queue) < 2 {
-					logrus.Info(util.Message(""))
 					service.DocumentQueue.Queue = append(service.DocumentQueue.Queue, *doc)
 				} else {
-					logrus.Info(util.Message(""))
-					var c = []trace.Document{}
-					copy(c, service.DocumentQueue.Queue)
-					logrus.Info(c)
-					logrus.Info(service.DocumentQueue.Queue)
-					service.DocumentQueueChan <- c
+					var queue = make([]trace.Document, len(service.DocumentQueue.Queue))
+					copy(queue, service.DocumentQueue.Queue)
+					service.DocumentQueueChan <- queue
 					service.DocumentQueue.Queue = []trace.Document{}
-					logrus.Info(util.Message(""))
+
 				}
-				logrus.Info(util.Message(""))
 				service.DocumentQueue.Mux.Unlock()
 			}
 		case <-ctx.Done():
