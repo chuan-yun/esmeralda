@@ -124,7 +124,11 @@ func (service *CollectorService) documentRoutine(ctx context.Context) error {
 					continue
 				}
 				if !exists {
-					createIndex, err := setting.Settings.Elasticsearch.Client.CreateIndex(document.IndexName).BodyString(storage.Mappings[document.IndexBaseName]).Do(ctx)
+					createIndex, err := setting.Settings.Elasticsearch.Client.
+						CreateIndex(document.IndexName).
+						BodyString(storage.Mappings[document.IndexBaseName]).
+						Do(ctx)
+
 					if err != nil {
 						logrus.WithFields(logrus.Fields{
 							"error": err,
@@ -143,7 +147,11 @@ func (service *CollectorService) documentRoutine(ctx context.Context) error {
 				service.Cache.Set(cacheKey, true, gocache.DefaultExpiration)
 			}
 
-			indexRequest := elastic.NewBulkIndexRequest().Index(document.IndexName).Type(document.TypeName).Doc(document.Payload)
+			indexRequest := elastic.NewBulkIndexRequest().
+				Index(document.IndexName).
+				Type(document.TypeName).
+				Doc(document.Payload)
+
 			bulkRequest = bulkRequest.Add(indexRequest)
 		}
 
@@ -159,6 +167,7 @@ func (service *CollectorService) documentRoutine(ctx context.Context) error {
 			logrus.WithFields(logrus.Fields{
 				"error": err,
 			}).Warn(util.Message("bulk save documents response error"))
+
 			return
 		}
 
