@@ -96,14 +96,14 @@ func (service *CollectorService) queueRoutine(ctx context.Context) error {
 		case spans := <-Service.SpansProcessingChan:
 			assignSpansToQueue(spans)
 		case <-ctx.Done():
-			logrus.Info(util.Message("Done SpansToDocumentQueue"))
+			logrus.Info("Done collector service queue routine")
 			return ctx.Err()
 		}
 	}
 }
 
 func (service *CollectorService) documentRoutine(ctx context.Context) error {
-	logrus.Info("Start CollectorService document routine")
+	logrus.Info("Start collector service document routine")
 
 	var bulkSaveDocument = func(documents *[]trace.Document) {
 
@@ -189,7 +189,7 @@ func (service *CollectorService) documentRoutine(ctx context.Context) error {
 		case queue := <-Service.DocumentQueueChan:
 			bulkSaveDocument(queue)
 		case <-ctx.Done():
-			logrus.Info(util.Message("Done BulkSaveDocument"))
+			logrus.Info("Done collector service document routine")
 			return ctx.Err()
 		}
 	}

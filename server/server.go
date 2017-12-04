@@ -59,7 +59,7 @@ func (me *EsmeraldaServerImpl) Shutdown(code int, reason string) {
 	logrus.WithFields(logrus.Fields{
 		"code":   code,
 		"reason": reason,
-	}).Info(util.Message("Shutdown server started"))
+	}).Info("Shutdown server started")
 
 	err := me.httpServer.Shutdown(me.context)
 	if err != nil {
