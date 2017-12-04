@@ -10,8 +10,6 @@ import (
 	"chuanyun.io/esmeralda/collector/trace"
 	"chuanyun.io/esmeralda/setting"
 	"chuanyun.io/esmeralda/util"
-	"chuanyun.io/quasimodo/config"
-	"github.com/Shopify/sarama"
 	"github.com/julienschmidt/httprouter"
 	gocache "github.com/patrickmn/go-cache"
 	"github.com/sirupsen/logrus"
@@ -74,10 +72,10 @@ func (service *CollectorService) kafkaRoutine(ctx context.Context) error {
 		setting.Settings.Kafka.Consumer.Buffer = 10
 	}
 	consumerConfig.ChannelBufferSize = setting.Settings.Kafka.Consumer.Buffer
-	if config.Config.Kafka.IsResetOffsets {
-		consumerConfig.Offsets.ResetOffsets = true
-		consumerConfig.Offsets.Initial = sarama.OffsetNewest
-	}
+	// if config.Config.Kafka.IsResetOffsets {
+	// 	consumerConfig.Offsets.ResetOffsets = true
+	// 	consumerConfig.Offsets.Initial = sarama.OffsetNewest
+	// }
 
 	if setting.Settings.Kafka.Zookeeper.Root != "" && setting.Settings.Kafka.Zookeeper.Root != "/" {
 		consumerConfig.Zookeeper.Chroot = setting.Settings.Kafka.Zookeeper.Root
