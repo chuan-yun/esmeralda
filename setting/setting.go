@@ -9,6 +9,10 @@ import (
 	"github.com/spf13/viper"
 )
 
+type Validator interface {
+	Validate() string
+}
+
 var Settings struct {
 	Application    ApplicationSettings
 	ConfigFilePath string
