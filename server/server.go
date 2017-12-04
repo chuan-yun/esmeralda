@@ -124,8 +124,7 @@ func (me *EsmeraldaServerImpl) startHTTPServer() {
 	me.httpServer = NewHTTPServer()
 	err := me.httpServer.Start(me.context)
 
-	if err != nil {
-		logrus.Info(err)
+	if err != nil && err != http.ErrServerClosed {
 		me.Shutdown(1, "Startup http server failed")
 
 		return
