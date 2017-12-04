@@ -65,7 +65,7 @@ func (service *CollectorService) Run(ctx context.Context) error {
 }
 
 func (service *CollectorService) queueRoutine(ctx context.Context) error {
-	logrus.Info(util.Message("Start queue routine"))
+	logrus.Info("Start CollectorService queue routine")
 
 	var assignSpansToQueue = func(spans *[]trace.Span) {
 
@@ -103,7 +103,7 @@ func (service *CollectorService) queueRoutine(ctx context.Context) error {
 }
 
 func (service *CollectorService) documentRoutine(ctx context.Context) error {
-	logrus.Info(util.Message("Start document routine"))
+	logrus.Info("Start CollectorService document routine")
 
 	var bulkSaveDocument = func(documents *[]trace.Document) {
 
