@@ -71,25 +71,25 @@ func (service *CollectorService) kafkaRoutine(ctx context.Context) error {
 
 	consumerConfig := consumergroup.NewConfig()
 	consumerConfig.Offsets.ProcessingTimeout = 5 * time.Second
-	if config.Config.Kafka.BufferSize < 0 || config.Config.Kafka.BufferSize > 1024 {
-		config.Config.Kafka.BufferSize = 10
+	if setting.Settings.Kafka.Consumer.Buffer < 0 || setting.Settings.Kafka.Consumer.Buffer > 1024 {
+		setting.Settings.Kafka.Consumer.Buffer = 10
 	}
-	consumerConfig.ChannelBufferSize = config.Config.Kafka.BufferSize
+	consumerConfig.ChannelBufferSize = setting.Settings.Kafka.Consumer.Buffer
 	if config.Config.Kafka.IsResetOffsets {
 		consumerConfig.Offsets.ResetOffsets = true
 		consumerConfig.Offsets.Initial = sarama.OffsetNewest
 	}
 
-	if config.Config.Kafka.Zookeeper.Path != "" && config.Config.Kafka.Zookeeper.Path != "/" {
-		consumerConfig.Zookeeper.Chroot = config.Config.Kafka.Zookeeper.Path
+	if setting.Settings.Kafka.Zookeeper.Root != "" && setting.Settings.Kafka.Zookeeper.Root != "/" {
+		consumerConfig.Zookeeper.Chroot = setting.Settings.Kafka.Zookeeper.Root
 	}
 
 	zookeepers := strings.Split(config.Config.Kafka.Zookeeper.Hosts, ",")
 	topics := strings.Split(config.Config.Kafka.Topics, ",")
 	consumer, consumerError := consumergroup.JoinConsumerGroup(
-		config.Config.Kafka.GroupID,
-		topics,
-		zookeepers,
+		setting.Settings.Kafka.Consumer.Group,
+		setting.Settings.Kafka.Topics,
+		setting.Settings.Kafka.Zookeeper.Servers,
 		consumerConfig)
 
 	if consumerError != nil {

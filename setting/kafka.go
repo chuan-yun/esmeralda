@@ -8,7 +8,7 @@ type KafkaSettings struct {
 
 type KafkaConsumerSettings struct {
 	Group  string
-	Buffer int64
+	Buffer int
 	Offset string
 }
 
