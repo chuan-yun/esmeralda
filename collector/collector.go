@@ -19,7 +19,6 @@ import (
 )
 
 type CollectorService struct {
-	context             context.Context
 	Cache               *gocache.Cache
 	SpansProcessingChan chan *[]trace.Span
 	DocumentQueueChan   chan []trace.Document
@@ -52,7 +51,6 @@ func (service *CollectorService) Run(ctx context.Context) error {
 
 	prometheus.MustRegister(logCollectMetric)
 
-	service.context = ctx
 	logrus.Info("Initializing CollectorService")
 
 	group, _ := errgroup.WithContext(ctx)
