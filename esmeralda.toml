@@ -44,26 +44,26 @@ dsn = "username:password@tcp(10.10.10.1:3306)/name?charset=utf8mb4&collation=utf
 [kafka]
 # Kafka Topics
 # string[]: support multiple topics
-topics = ["chuanyun"]
+topics = ["full_stack_tracing"]
 
 [kafka.consumer]
 # Kafka Consumer Group ID
 # string: kafka consumer group id.
-group = "group name"
+group = "esmeralda-beta"
 # Kafka Consumer Message Buffer Size
 # int: 256(default)
-buffer = 10
+buffer = 256
 # Kafka Consumer Offset
 # enum: oldest, newest
-offset = "oldest"
+offset = "newest"
 
 [kafka.zookeeper]
 # Kafka Zookeeper Servers
 # string[]: ["192.168.0.3:2181", "192.168.0.4:2181"]
-servers = ["192.168.0.3:2181", "192.168.0.4:2181"]
+servers = ["zk2181a.wdds.zk.com:2181", "zk2181b.wdds.zk.com:2181", "zk2181c.wdds.zk.com:2181"]
 # Kafka Zookeeper Borker Path
 # string: "/"(default)
-root = "/"
+root = "/ffan/kafka/ffan_service/svc_hippo"
 
 
 [module]
