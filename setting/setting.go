@@ -19,6 +19,7 @@ var Settings struct {
 	Elasticsearch  ElasticsearchSettings
 	Log            LogSettings
 	Web            WebSettings
+	Kafka          KafkaSettings
 }
 
 func Initialize(configFilePath string) {

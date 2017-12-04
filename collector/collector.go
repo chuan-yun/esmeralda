@@ -3,6 +3,7 @@ package collector
 import (
 	"context"
 	"net/http"
+	"strings"
 	"sync"
 	"time"
 
@@ -10,10 +11,12 @@ import (
 	"chuanyun.io/esmeralda/collector/trace"
 	"chuanyun.io/esmeralda/setting"
 	"chuanyun.io/esmeralda/util"
+	"chuanyun.io/quasimodo/config"
+	"github.com/Shopify/sarama"
 	"github.com/julienschmidt/httprouter"
 	gocache "github.com/patrickmn/go-cache"
-	"github.com/prometheus/client_golang/prometheus"
 	"github.com/sirupsen/logrus"
+	"github.com/wvanbergen/kafka/consumergroup"
 	"golang.org/x/sync/errgroup"
 	elastic "gopkg.in/olivere/elastic.v5"
 )
@@ -41,15 +44,15 @@ func NewCollectorService() *CollectorService {
 
 func (service *CollectorService) Run(ctx context.Context) error {
 
-	logCollectMetric := prometheus.NewGaugeVec(
-		prometheus.GaugeOpts{
-			Name: "kafka_broker_consumer_group_current_offset",
-			Help: "Consuming offset of each consumer group/topic/partition based on committed offset",
-		},
-		[]string{"topic", "partition", "group"},
-	)
+	// logCollectMetric := prometheus.NewGaugeVec(
+	// 	prometheus.GaugeOpts{
+	// 		Name: "kafka_broker_consumer_group_current_offset",
+	// 		Help: "Consuming offset of each consumer group/topic/partition based on committed offset",
+	// 	},
+	// 	[]string{"topic", "partition", "group"},
+	// )
 
-	prometheus.MustRegister(logCollectMetric)
+	// prometheus.MustRegister(logCollectMetric)
 
 	logrus.Info("Initializing CollectorService")
 
@@ -62,6 +65,43 @@ func (service *CollectorService) Run(ctx context.Context) error {
 	logrus.Info("Done CollectorService")
 
 	return err
+}
+
+func (service *CollectorService) kafkaRoutine(ctx context.Context) error {
+
+	consumerConfig := consumergroup.NewConfig()
+	consumerConfig.Offsets.ProcessingTimeout = 5 * time.Second
+	if config.Config.Kafka.BufferSize < 0 || config.Config.Kafka.BufferSize > 1024 {
+		config.Config.Kafka.BufferSize = 10
+	}
+	consumerConfig.ChannelBufferSize = config.Config.Kafka.BufferSize
+	if config.Config.Kafka.IsResetOffsets {
+		consumerConfig.Offsets.ResetOffsets = true
+		consumerConfig.Offsets.Initial = sarama.OffsetNewest
+	}
+
+	if config.Config.Kafka.Zookeeper.Path != "" && config.Config.Kafka.Zookeeper.Path != "/" {
+		consumerConfig.Zookeeper.Chroot = config.Config.Kafka.Zookeeper.Path
+	}
+
+	zookeepers := strings.Split(config.Config.Kafka.Zookeeper.Hosts, ",")
+	topics := strings.Split(config.Config.Kafka.Topics, ",")
+	consumer, consumerError := consumergroup.JoinConsumerGroup(
+		config.Config.Kafka.GroupID,
+		topics,
+		zookeepers,
+		consumerConfig)
+
+	if consumerError != nil {
+		logrus.Fatal(consumerError)
+	}
+
+	closeConsumer := func() {
+		logrus.Info("main: closing consumer")
+		if error := consumer.Close(); error != nil {
+			logrus.Fatal(error)
+		}
+	}
 }
 
 func (service *CollectorService) queueRoutine(ctx context.Context) error {
