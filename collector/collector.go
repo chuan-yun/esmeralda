@@ -21,7 +21,7 @@ import (
 type CollectorService struct {
 	Cache               *gocache.Cache
 	SpansProcessingChan chan *[]trace.Span
-	DocumentQueueChan   chan []trace.Document
+	DocumentQueueChan   chan *[]trace.Document
 	DocumentQueue       []trace.Document
 	Mux                 *sync.Mutex
 }
@@ -33,7 +33,7 @@ func NewCollectorService() *CollectorService {
 	return &CollectorService{
 		Cache:               gocache.New(60*time.Second, 60*time.Second),
 		SpansProcessingChan: make(chan *[]trace.Span),
-		DocumentQueueChan:   make(chan []trace.Document),
+		DocumentQueueChan:   make(chan *[]trace.Document),
 		DocumentQueue:       []trace.Document{},
 		Mux:                 &sync.Mutex{},
 	}
@@ -82,9 +82,9 @@ func (service *CollectorService) queueRoutine(ctx context.Context) error {
 			if len(service.DocumentQueue) < 2 {
 				service.DocumentQueue = append(service.DocumentQueue, *doc)
 			} else {
-				// var queue = make([]trace.Document, len(service.DocumentQueue))
-				// copy(queue, service.DocumentQueue)
-				service.DocumentQueueChan <- service.DocumentQueue
+				var queue = make([]trace.Document, len(service.DocumentQueue))
+				copy(queue, service.DocumentQueue)
+				service.DocumentQueueChan <- &queue
 				service.DocumentQueue = []trace.Document{}
 			}
 			service.Mux.Unlock()
@@ -187,7 +187,7 @@ func (service *CollectorService) documentRoutine(ctx context.Context) error {
 	for {
 		select {
 		case queue := <-Service.DocumentQueueChan:
-			bulkSaveDocument(&queue)
+			bulkSaveDocument(queue)
 		case <-ctx.Done():
 			logrus.Info(util.Message("Done BulkSaveDocument"))
 			return ctx.Err()
