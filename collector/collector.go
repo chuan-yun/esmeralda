@@ -204,14 +204,14 @@ func HTTPCollector(w http.ResponseWriter, r *http.Request, _ httprouter.Params) 
 	logrus.WithFields(logrus.Fields{
 		"size": r.ContentLength,
 		"addr": util.IP(r),
-	}).Info(util.Message("trace log statistics"))
+	}).Info("trace log statistics")
 
 	spans, err := trace.ToSpans(body)
 	if err != nil {
 		logrus.WithFields(logrus.Fields{
 			"error": err,
 			"trace": body,
-		}).Warn("main: trace log decode to json error")
+		}).Warn(util.Message("trace log decode to json error"))
 
 		w.Write([]byte(`{"msg": "error trace log"}`))
 
