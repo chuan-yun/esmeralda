@@ -159,18 +159,10 @@ func (me *HTTPServer) Start(ctx context.Context) (err error) {
 
 	switch setting.Settings.Web.Schema {
 	case setting.HTTP:
-		err = me.httpSrv.ListenAndServe()
+		return me.httpSrv.ListenAndServe()
 	default:
-		err = errors.New("Invalid web scheme")
+		return errors.New("Invalid web scheme")
 	}
-
-	if err != nil {
-		logrus.WithFields(logrus.Fields{
-			"error": err,
-		}).Error(util.Message("http server error"))
-	}
-
-	return err
 }
 
 func (me *HTTPServer) Shutdown(ctx context.Context) error {
