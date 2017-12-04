@@ -3,7 +3,6 @@ package collector
 import (
 	"context"
 	"net/http"
-	"strings"
 	"sync"
 	"time"
 
@@ -84,8 +83,6 @@ func (service *CollectorService) kafkaRoutine(ctx context.Context) error {
 		consumerConfig.Zookeeper.Chroot = setting.Settings.Kafka.Zookeeper.Root
 	}
 
-	zookeepers := strings.Split(config.Config.Kafka.Zookeeper.Hosts, ",")
-	topics := strings.Split(config.Config.Kafka.Topics, ",")
 	consumer, consumerError := consumergroup.JoinConsumerGroup(
 		setting.Settings.Kafka.Consumer.Group,
 		setting.Settings.Kafka.Topics,
@@ -95,13 +92,14 @@ func (service *CollectorService) kafkaRoutine(ctx context.Context) error {
 	if consumerError != nil {
 		logrus.Fatal(consumerError)
 	}
-
-	closeConsumer := func() {
-		logrus.Info("main: closing consumer")
-		if error := consumer.Close(); error != nil {
-			logrus.Fatal(error)
-		}
-	}
+	logrus.Info(consumer)
+	// closeConsumer := func() {
+	// 	logrus.Info("main: closing consumer")
+	// 	if error := consumer.Close(); error != nil {
+	// 		logrus.Fatal(error)
+	// 	}
+	// }
+	return nil
 }
 
 func (service *CollectorService) queueRoutine(ctx context.Context) error {
