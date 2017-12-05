@@ -2,6 +2,7 @@ package collector
 
 import (
 	"context"
+	"fmt"
 	"net/http"
 	"sync"
 	"time"
@@ -58,6 +59,14 @@ func (service *CollectorService) Run(ctx context.Context) error {
 }
 
 func (service *CollectorService) kafkaRoutine(ctx context.Context) error {
+	defer func() {
+		fmt.Println(util.Message(""))
+		if err := recover(); err != nil {
+			fmt.Println(err)
+		}
+		fmt.Println(util.Message(""))
+	}()
+
 	sarama.Logger = logrus.StandardLogger()
 
 	consumerConfig := consumergroup.NewConfig()
