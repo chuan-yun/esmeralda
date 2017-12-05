@@ -11,6 +11,7 @@ type ElasticsearchSettings struct {
 	Username string
 	Password string
 	Sniff    bool
+	Bulk     int
 
 	Client *elastic.Client
 }
@@ -32,5 +33,14 @@ func InitializeElasticClient() {
 		logrus.WithFields(logrus.Fields{
 			"error": err,
 		}).Fatal(util.Message("Initialize elasticsearch client connections failed"))
+	}
+
+	switch true {
+	case Settings.Elasticsearch.Bulk < 0:
+		Settings.Elasticsearch.Bulk = 2000
+	case Settings.Elasticsearch.Bulk > 5000:
+		Settings.Elasticsearch.Bulk = 5000
+	default:
+		// do nothing
 	}
 }

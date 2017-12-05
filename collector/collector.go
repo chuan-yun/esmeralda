@@ -10,6 +10,7 @@ import (
 	"chuanyun.io/esmeralda/collector/trace"
 	"chuanyun.io/esmeralda/setting"
 	"chuanyun.io/esmeralda/util"
+	"github.com/Shopify/sarama"
 	"github.com/julienschmidt/httprouter"
 	gocache "github.com/patrickmn/go-cache"
 	"github.com/sirupsen/logrus"
@@ -24,6 +25,7 @@ type CollectorService struct {
 	DocumentQueueChan   chan *[]trace.Document
 	DocumentQueue       []trace.Document
 	Mux                 *sync.Mutex
+	Consumer            *consumergroup.ConsumerGroup
 }
 
 var Service = NewCollectorService()
@@ -40,16 +42,6 @@ func NewCollectorService() *CollectorService {
 }
 
 func (service *CollectorService) Run(ctx context.Context) error {
-
-	// logCollectMetric := prometheus.NewGaugeVec(
-	// 	prometheus.GaugeOpts{
-	// 		Name: "kafka_broker_consumer_group_current_offset",
-	// 		Help: "Consuming offset of each consumer group/topic/partition based on committed offset",
-	// 	},
-	// 	[]string{"topic", "partition", "group"},
-	// )
-
-	// prometheus.MustRegister(logCollectMetric)
 
 	logrus.Info("Initializing CollectorService")
 
@@ -72,10 +64,17 @@ func (service *CollectorService) kafkaRoutine(ctx context.Context) error {
 		setting.Settings.Kafka.Consumer.Buffer = 10
 	}
 	consumerConfig.ChannelBufferSize = setting.Settings.Kafka.Consumer.Buffer
-	// if config.Config.Kafka.IsResetOffsets {
-	// 	consumerConfig.Offsets.ResetOffsets = true
-	// 	consumerConfig.Offsets.Initial = sarama.OffsetNewest
-	// }
+
+	switch setting.Settings.Kafka.Consumer.Offset {
+	case "newest":
+		consumerConfig.Offsets.Initial = sarama.OffsetNewest
+	case "oldest":
+		consumerConfig.Offsets.Initial = sarama.OffsetOldest
+	default:
+		logrus.Warn(util.Message("kafka consumer offset init error, use newest(default)"))
+		consumerConfig.Offsets.Initial = sarama.OffsetNewest
+		setting.Settings.Kafka.Consumer.Offset = "newest"
+	}
 
 	if setting.Settings.Kafka.Zookeeper.Root != "" && setting.Settings.Kafka.Zookeeper.Root != "/" {
 		consumerConfig.Zookeeper.Chroot = setting.Settings.Kafka.Zookeeper.Root
@@ -115,7 +114,7 @@ func (service *CollectorService) queueRoutine(ctx context.Context) error {
 				continue
 			}
 			service.Mux.Lock()
-			if len(service.DocumentQueue) < 2 {
+			if len(service.DocumentQueue) < setting.Settings.Elasticsearch.Bulk {
 				service.DocumentQueue = append(service.DocumentQueue, *doc)
 			} else {
 				var queue = make([]trace.Document, len(service.DocumentQueue))
