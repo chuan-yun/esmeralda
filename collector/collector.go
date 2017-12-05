@@ -122,7 +122,7 @@ func (service *CollectorService) kafkaRoutine(ctx context.Context) error {
 				logrus.WithFields(logrus.Fields{
 					"error": err,
 					"trace": traceLog,
-				}).Warn("main: trace log decode to json error")
+				}).Warn("trace log decode to json error")
 			}
 			Service.SpansProcessingChan <- spans
 			Service.Consumer.CommitUpto(message)
