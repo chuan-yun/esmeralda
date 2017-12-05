@@ -70,7 +70,6 @@ func (service *CollectorService) kafkaRoutine(ctx context.Context) error {
 	}()
 
 	zk.DefaultLogger = logrus.StandardLogger()
-
 	sarama.Logger = logrus.StandardLogger()
 
 	consumerConfig := consumergroup.NewConfig()
