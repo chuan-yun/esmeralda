@@ -7,6 +7,8 @@ import (
 	"sync"
 	"time"
 
+	"github.com/samuel/go-zookeeper/zk"
+
 	"chuanyun.io/esmeralda/collector/storage"
 	"chuanyun.io/esmeralda/collector/trace"
 	"chuanyun.io/esmeralda/setting"
@@ -66,6 +68,8 @@ func (service *CollectorService) kafkaRoutine(ctx context.Context) error {
 		}
 		fmt.Println(util.Message(""))
 	}()
+
+	zk.DefaultLogger = logrus.StandardLogger()
 
 	sarama.Logger = logrus.StandardLogger()
 
