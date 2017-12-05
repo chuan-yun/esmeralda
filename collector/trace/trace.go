@@ -20,3 +20,31 @@ func ToSpans(data string) (*[]Span, error) {
 
 	return &spans, nil
 }
+
+type MessagePack struct {
+	Body      string          `json:"body"`
+	Host      json.RawMessage `json:"hostname"`
+	Project   json.RawMessage `json:"project"`
+	Path      json.RawMessage `json:"fp"`
+	Timestamp json.RawMessage `json:"timestamp"`
+}
+
+func Unwrap(data []byte) (MessagePack, error) {
+	var s MessagePack
+
+	err := json.Unmarshal(data, &s)
+
+	if err != nil {
+		return s, err
+	}
+	return s, nil
+}
+
+func GetMessageBody(data []byte) (string, error) {
+	s, err := Unwrap(data)
+	if err != nil {
+		return "", err
+	}
+
+	return s.Body, nil
+}

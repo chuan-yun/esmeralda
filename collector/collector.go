@@ -80,23 +80,42 @@ func (service *CollectorService) kafkaRoutine(ctx context.Context) error {
 		consumerConfig.Zookeeper.Chroot = setting.Settings.Kafka.Zookeeper.Root
 	}
 
-	consumer, consumerError := consumergroup.JoinConsumerGroup(
+	var err error
+	Service.Consumer, err = consumergroup.JoinConsumerGroup(
 		setting.Settings.Kafka.Consumer.Group,
 		setting.Settings.Kafka.Topics,
 		setting.Settings.Kafka.Zookeeper.Servers,
 		consumerConfig)
 
-	if consumerError != nil {
-		logrus.Fatal(consumerError)
+	if err != nil {
+		logrus.Fatal(err)
 	}
-	logrus.Info(consumer)
-	// closeConsumer := func() {
-	// 	logrus.Info("main: closing consumer")
-	// 	if error := consumer.Close(); error != nil {
-	// 		logrus.Fatal(error)
-	// 	}
-	// }
-	return nil
+
+	for {
+		select {
+		case message := <-Service.Consumer.Messages():
+			traceLog, err := trace.GetMessageBody(message.Value)
+			if err != nil {
+			}
+
+			if traceLog == "" {
+				traceLog = string(message.Value[:])
+			}
+
+			spans, err := trace.ToSpans(traceLog)
+			if err != nil {
+				logrus.WithFields(logrus.Fields{
+					"error": err,
+					"trace": traceLog,
+				}).Warn("main: trace log decode to json error")
+			}
+			Service.SpansProcessingChan <- spans
+			Service.Consumer.CommitUpto(message)
+		case <-ctx.Done():
+			logrus.Info("Done collector service queue routine")
+			return ctx.Err()
+		}
+	}
 }
 
 func (service *CollectorService) queueRoutine(ctx context.Context) error {
