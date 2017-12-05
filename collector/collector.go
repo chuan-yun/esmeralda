@@ -132,6 +132,14 @@ func (service *CollectorService) kafkaRoutine(ctx context.Context) error {
 func (service *CollectorService) queueRoutine(ctx context.Context) error {
 	logrus.Info("Start CollectorService queue routine")
 
+	defer func() {
+		fmt.Println(util.Message(""))
+		if err := recover(); err != nil {
+			fmt.Println(err)
+		}
+		fmt.Println(util.Message(""))
+	}()
+
 	var assignSpansToQueue = func(spans *[]trace.Span) {
 
 		for _, span := range *spans {
