@@ -58,6 +58,7 @@ func (service *CollectorService) Run(ctx context.Context) error {
 }
 
 func (service *CollectorService) kafkaRoutine(ctx context.Context) error {
+	sarama.Logger = logrus.StandardLogger()
 
 	consumerConfig := consumergroup.NewConfig()
 	consumerConfig.Offsets.ProcessingTimeout = 5 * time.Second
