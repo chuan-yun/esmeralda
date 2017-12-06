@@ -170,7 +170,11 @@ func (service *CollectorService) queueRoutine(ctx context.Context) error {
 	for {
 		select {
 		case spans := <-Service.SpansProcessingChan:
-			assignSpansToQueue(spans)
+			if spans == nil {
+				logrus.Info(util.Message("span is nil"))
+			} else {
+				assignSpansToQueue(spans)
+			}
 		case <-ctx.Done():
 			logrus.Info("Done collector service queue routine")
 			return ctx.Err()
