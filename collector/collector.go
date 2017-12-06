@@ -50,6 +50,12 @@ func (service *CollectorService) Run(ctx context.Context) error {
 	group, _ := errgroup.WithContext(ctx)
 	group.Go(func() error { return service.queueRoutine(ctx) })
 	group.Go(func() error { return service.documentRoutine(ctx) })
+	group.Go(func() error { return service.documentRoutine(ctx) })
+	group.Go(func() error { return service.documentRoutine(ctx) })
+	group.Go(func() error { return service.documentRoutine(ctx) })
+	group.Go(func() error { return service.kafkaRoutine(ctx) })
+	group.Go(func() error { return service.kafkaRoutine(ctx) })
+	group.Go(func() error { return service.kafkaRoutine(ctx) })
 	group.Go(func() error { return service.kafkaRoutine(ctx) })
 
 	err := group.Wait()
