@@ -62,11 +62,11 @@ func (service *CollectorService) Run(ctx context.Context) error {
 
 func (service *CollectorService) kafkaRoutine(ctx context.Context) error {
 	defer func() {
-		fmt.Println(util.Message(""))
 		if err := recover(); err != nil {
-			fmt.Println(err)
+			logrus.WithFields(logrus.Fields{
+				"error": err,
+			}).Error(util.Message("kafka consumer panic"))
 		}
-		fmt.Println(util.Message(""))
 	}()
 
 	zk.DefaultLogger = logrus.StandardLogger()
