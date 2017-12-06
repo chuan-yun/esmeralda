@@ -121,9 +121,10 @@ func (service *CollectorService) kafkaRoutine(ctx context.Context) error {
 					"error": err,
 					"trace": traceLog,
 				}).Warn("trace log decode to json error")
+			} else {
+				Service.SpansProcessingChan <- spans
 			}
 
-			Service.SpansProcessingChan <- spans
 			Service.Consumer.CommitUpto(message)
 		case <-ctx.Done():
 			logrus.Info("Done collector service queue routine")
