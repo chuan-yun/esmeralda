@@ -50,12 +50,6 @@ func (service *CollectorService) Run(ctx context.Context) error {
 	group, _ := errgroup.WithContext(ctx)
 	group.Go(func() error { return service.queueRoutine(ctx) })
 	group.Go(func() error { return service.documentRoutine(ctx) })
-	group.Go(func() error { return service.documentRoutine(ctx) })
-	group.Go(func() error { return service.documentRoutine(ctx) })
-	group.Go(func() error { return service.documentRoutine(ctx) })
-	group.Go(func() error { return service.kafkaRoutine(ctx) })
-	group.Go(func() error { return service.kafkaRoutine(ctx) })
-	group.Go(func() error { return service.kafkaRoutine(ctx) })
 	group.Go(func() error { return service.kafkaRoutine(ctx) })
 
 	err := group.Wait()
@@ -141,14 +135,6 @@ func (service *CollectorService) kafkaRoutine(ctx context.Context) error {
 
 func (service *CollectorService) queueRoutine(ctx context.Context) error {
 	logrus.Info("Start CollectorService queue routine")
-
-	// defer func() {
-	// 	fmt.Println(util.Message(""))
-	// 	if err := recover(); err != nil {
-	// 		fmt.Println(err)
-	// 	}
-	// 	fmt.Println(util.Message(""))
-	// }()
 
 	var assignSpansToQueue = func(spans *[]trace.Span) {
 
