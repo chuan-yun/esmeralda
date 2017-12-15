@@ -1,6 +1,8 @@
 package trace
 
 import (
+	"fmt"
+
 	"chuanyun.io/esmeralda/util"
 )
 
@@ -120,6 +122,17 @@ func (ListResult *ListResult) ServiceNameDuration(serverName string, duration in
 	}
 	ListResult.ServiceNameList[serverName].AllDuration = ListResult.ServiceNameList[serverName].AllDuration + duration
 	ListResult.ServiceNameList[serverName].Duration = util.MaxInt64(duration, ListResult.ServiceNameList[serverName].Duration)
+}
+
+func (ListResult *ListResult) TraceRatio() {
+	for _, sval := range ListResult.ServiceNameList {
+		var Ratio int64
+		Ratio = 0
+		if ListResult.Duration != 0 {
+			Ratio = sval.Duration / ListResult.Duration
+		}
+		sval.Ratio = fmt.Sprintf("%.2f", float64(Ratio))
+	}
 }
 
 func (ListResult *ListResult) initComponent(cType string) {

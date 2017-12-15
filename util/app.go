@@ -4,11 +4,13 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	elastic "gopkg.in/olivere/elastic.v5"
 	"log"
 	"net/http"
+	"net/url"
 	"strconv"
 	"time"
+
+	elastic "gopkg.in/olivere/elastic.v5"
 )
 
 type Response struct {
@@ -28,7 +30,6 @@ var (
 	Status = map[int]string{0: "normal", 8: "warning", 9: "danger", 10: "miss"}
 )
 
-//获取状态
 func GetStatus(level int) string {
 	if v, ok := Status[level]; ok {
 		return v
@@ -36,7 +37,6 @@ func GetStatus(level int) string {
 	return Status[0]
 }
 
-// 输出JSON
 func JSON(w http.ResponseWriter, Response interface{}) {
 	rs, err := json.Marshal(Response)
 	if err != nil {
@@ -80,7 +80,6 @@ func GetAggsSumValF(rlt *elastic.SearchResult, term string) float64 {
 	}
 }
 
-// 校验时间参数的范围
 func VerifyParamTime(resp *ResponseDebug, from, to int64) (int64, int64, error) {
 	if from <= 0 {
 		from = time.Now().Add(time.Second * -3600).Unix()
@@ -93,7 +92,6 @@ func VerifyParamTime(resp *ResponseDebug, from, to int64) (int64, int64, error) 
 		return from, to, errors.New(resp.Message)
 	}
 
-	// 最大跨度查询3天
 	if to > from+60*60*24*3 {
 		resp.Message = "time not support"
 		return from, to, errors.New(resp.Message)
@@ -101,7 +99,6 @@ func VerifyParamTime(resp *ResponseDebug, from, to int64) (int64, int64, error) 
 	return from, to, nil
 }
 
-// 根据 Timestamp 返回字符串和time.Time 形式的变量
 func CalcTimeRange(from, to int64) (fromStr, toStr string, fromTime, toTime time.Time) {
 	fromTime = time.Unix(from, 0)
 	toTime = time.Unix(to, 0)
@@ -127,4 +124,16 @@ func MaxInt64(num int64, args ...int64) int64 {
 		}
 	}
 	return num
+}
+
+func GetParameters(r *http.Request) map[string]string {
+	params := map[string]string{}
+	m, err := url.ParseQuery(r.URL.RawQuery)
+	if err != nil {
+		return params
+	}
+	for k, v := range m {
+		params[k] = string(v[0])
+	}
+	return params
 }

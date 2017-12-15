@@ -4,11 +4,13 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"io"
 	"net/http"
 	"time"
 
 	"chuanyun.io/esmeralda/setting"
 	"chuanyun.io/esmeralda/util"
+	"github.com/sirupsen/logrus"
 	elastic "gopkg.in/olivere/elastic.v5"
 )
 
@@ -52,6 +54,17 @@ type ErrorParams struct {
 	To   int64
 }
 
+func Lists(params *ListParams) *util.ResponseDebug {
+	resp := &util.ResponseDebug{
+		Status:  http.StatusOK,
+		Message: "OK",
+		Data:    &struct{}{},
+		Debug:   &struct{}{},
+	}
+	resp.Data, resp.Debug = GetTraceList(params)
+	return resp
+}
+
 func InitErrorResult() *ErrorResult {
 	return &ErrorResult{
 		Spans: []ErrorSpans{},
@@ -92,52 +105,67 @@ func (ErrorResult *ErrorResult) DoingSpan(span Span) {
 	ErrorResult.Spans = append(ErrorResult.Spans, errorSpans)
 }
 
-func Lists(params *ListParams) *util.ResponseDebug {
-
-	resp := &util.ResponseDebug{}
-	resp.Status = 5001
-	resp.Message = ""
-	resp.Data = &struct{}{}
-
-	if params.Limit > 1000 {
-		resp.Message = "最多支持1000条查询结果"
-		return resp
-	}
-
-	// 默认显示 10 条
-	if params.Limit == 0 {
-		params.Limit = 10
-	}
-
-	if params.Duration > 0 {
-		params.Duration = params.Duration * 1000
-	}
-
-	// 默认设置当天0点时间为开始时间
-	if params.From <= 0 {
-		timeStr := time.Now().Format("2006-01-02")
-		t, _ := time.ParseInLocation("2006-01-02", timeStr, time.Local)
-		params.From = t.Unix()
-	}
-
-	var err error
-	params.From, params.To, err = util.VerifyParamTime(resp, params.From, params.To)
-	if err != nil {
-		resp.Message = err.Error()
-		return resp
-	}
-
-	resp.Status = http.StatusOK
-	resp.Message = "OK"
-	resp.Data, resp.Debug = GetTraceList(params)
-	return resp
-}
-
 func Waterfall(params *WaterfallParams) *util.Response {
 	resp := &util.Response{}
 	resp.Status = http.StatusOK
 	resp.Data = GetTraceWaterfall(params)
 	return resp
+}
+
+func buildTLDSLIndex(query *elastic.BoolQuery, params *ListParams) *elastic.BoolQuery {
+	_, _, fromTime, toTime := util.CalcTimeRange(params.From, params.To)
+	query = query.Must(elastic.NewRangeQuery("timestamp").Gte(fromTime.UnixNano() / 1000).Lte(toTime.UnixNano() / 1000).
+		IncludeLower(true).IncludeUpper(true))
+	return query
+}
+
+func buildTLDSLAPI(query *elastic.BoolQuery, params *ListParams) *elastic.BoolQuery {
+	queryShould := elastic.NewBoolQuery()
+	queryShould = queryShould.Should(elastic.NewMatchPhraseQuery("binaryAnnotations.value", params.Value))
+	queryShould = queryShould.Should(elastic.NewMatchPhraseQuery("relatedApi", params.Value))
+	queryShould = queryShould.Should(elastic.NewMatchPhraseQuery("selfApi", params.Value))
+	query = query.Must(queryShould)
+	return query
+}
+
+func buildTLDSLDuration(query *elastic.BoolQuery, params *ListParams) *elastic.BoolQuery {
+	return query.Must(elastic.NewRangeQuery("duration").Gte(params.Duration))
+}
+
+func buildTLDSLServiceName(query *elastic.BoolQuery, params *ListParams) *elastic.BoolQuery {
+	return query.Must(elastic.NewTermQuery("annotations.endpoint.serviceName", params.ServiceName))
+}
+
+func buildTLDSLIPv4(query *elastic.BoolQuery, params *ListParams) *elastic.BoolQuery {
+	return query.Must(elastic.NewTermQuery("annotations.endpoint.ipv4", params.Ipv4))
+}
+
+func buildTLDSLErrorType(query *elastic.BoolQuery, params *ListParams) *elastic.BoolQuery {
+	errTypes, err := parseErrorType(params.ErrorType)
+	if err != nil {
+		return query
+	}
+	isAllErr := ""
+	for _, errType := range errTypes {
+		if errType == "all" {
+			isAllErr = "all"
+		}
+	}
+	queryShould := elastic.NewBoolQuery()
+	if isAllErr == "all" {
+		queryShould = queryShould.Should(createBoolMustTerm("binaryAnnotations.key", "error"))
+		queryShould = queryShould.Should(createHTTPStatusQuery())
+	} else {
+		for _, errType := range errTypes {
+			if errType == "api" {
+				queryShould = queryShould.Should(createHTTPStatusQuery())
+			} else {
+				queryShould = queryShould.Should(createComponentQuery(errType))
+			}
+		}
+	}
+	query = query.Must(queryShould)
+	return query
 }
 
 func GetTraceList(params *ListParams) (map[string]*ListResult, interface{}) {
@@ -150,61 +178,23 @@ func GetTraceList(params *ListParams) (map[string]*ListResult, interface{}) {
 	esIndexes := getTraceTable(fromTime, toTime)
 
 	query := elastic.NewBoolQuery()
-	query = query.Must(elastic.NewRangeQuery("timestamp").Gte(fromTime.UnixNano() / 1000).Lte(toTime.UnixNano() / 1000).
-		IncludeLower(true).IncludeUpper(true))
+	query = buildTLDSLIndex(query, params)
 
-	if len(params.Value) > 0 {
-		queryShould := elastic.NewBoolQuery()
-		queryShould = queryShould.Should(elastic.NewMatchPhraseQuery("binaryAnnotations.value", params.Value))
-		queryShould = queryShould.Should(elastic.NewMatchPhraseQuery("relatedApi", params.Value))
-		queryShould = queryShould.Should(elastic.NewMatchPhraseQuery("selfApi", params.Value))
-		query = query.Must(queryShould)
-	}
-
-	//条件 duration 网络耗时
 	if params.Duration > 0 {
-		query = query.Must(elastic.NewRangeQuery("duration").Gte(params.Duration))
+		query = buildTLDSLDuration(query, params)
 	}
-
-	//条件 服务名
 	if len(params.ServiceName) > 0 {
-		query = query.Must(elastic.NewTermQuery("annotations.endpoint.serviceName", params.ServiceName))
+		query = buildTLDSLServiceName(query, params)
 	}
-
 	if len(params.Ipv4) > 0 {
-		query = query.Must(elastic.NewTermQuery("annotations.endpoint.ipv4", params.Ipv4))
+		query = buildTLDSLIPv4(query, params)
+	}
+	if len(params.ErrorType) > 0 {
+		query = buildTLDSLErrorType(query, params)
 	}
 
-	//错误类型
-	errTypes, err := parseErrorType(params.ErrorType)
-	if err == nil {
-		isAllErr := ""
-		for _, errType := range errTypes {
-			if errType == "all" {
-				isAllErr = "all"
-			}
-		}
-		if isAllErr == "all" {
-			queryShould := elastic.NewBoolQuery()
-			queryShould = queryShould.Should(createBoolMustTerm("binaryAnnotations.key", "error"))
-			queryShould = queryShould.Should(createHTTPStatusQuery())
-			query = query.Must(queryShould)
-		} else {
-			queryShould := elastic.NewBoolQuery()
-			for _, errType := range errTypes {
-				if errType == "api" {
-					queryShould = queryShould.Should(createHTTPStatusQuery())
-				} else {
-					queryShould = queryShould.Should(createComponentQuery(errType))
-				}
-			}
-			query = query.Must(queryShould)
-		}
-	}
-	aggsTrace := elastic.NewTermsAggregation().Field("traceId").Size(params.Limit) //聚合
-
+	aggsTrace := elastic.NewTermsAggregation().Field("traceId").Size(params.Limit)
 	dsl, _ = query.Source()
-
 	tracesDSL := esClient.Search(esIndexes...).
 		IgnoreUnavailable(true).
 		FetchSource(false).
@@ -214,7 +204,11 @@ func GetTraceList(params *ListParams) (map[string]*ListResult, interface{}) {
 		Query(query)
 
 	if rlt, err := tracesDSL.Do(context.Background()); err != nil {
-		fmt.Println("tracesDSL json err: ", err)
+		traceIDSListDSL, _ := json.Marshal(dsl)
+		logrus.WithFields(logrus.Fields{
+			"err": err,
+			"dsl": string(traceIDSListDSL),
+		}).Info("Fetch elasticsearch result tracesDSL json err")
 	} else {
 		if terms, ok := rlt.Aggregations.Terms("traceId"); ok {
 			for _, b := range terms.Buckets {
@@ -224,59 +218,84 @@ func GetTraceList(params *ListParams) (map[string]*ListResult, interface{}) {
 	}
 
 	traceQuery := elastic.NewBoolQuery().Must(elastic.NewTermsQuery("traceId", traceIDList...))
-	tracelistDSL := esClient.Search(esIndexes...).
+	source, _ := traceQuery.Source()
+
+	tracelistDSL := esClient.Scroll(esIndexes...).
 		IgnoreUnavailable(true).
-		Size(1500).From(0).
-		Query(traceQuery)
+		KeepAlive("1m").
+		Size(3000).Query(traceQuery).Sort("timestamp", false)
 
-	if list, err := tracelistDSL.Do(context.Background()); err != nil {
-		fmt.Println("tracelistDSL json err: ", err)
-	} else {
+	tracelistDSLOUPUT, _ := query.Source()
+	fmt.Println(tracelistDSLOUPUT)
 
-		for _, hit := range list.Hits.Hits {
-			s := Span{}
-			if err := json.Unmarshal(*hit.Source, &s); err != nil {
-				fmt.Println("tracelistDSL list json err: ", err)
-			} else {
-				if _, ok := ListResultMap[s.TraceID]; !ok {
-					ListResultMap[s.TraceID] = InitResult(s.TraceID, s.ID)
-				}
-				if s.ParentID == "" {
-					ListResultMap[s.TraceID].SetTimestamp(s.Timestamp)
-					ListResultMap[s.TraceID].SetDuration(s.Duration)
-					ListResultMap[s.TraceID].SetRoot(true)
-				} else {
-					if ListResultMap[s.TraceID].Root == false && s.Duration >= ListResultMap[s.TraceID].Duration {
-						ListResultMap[s.TraceID].SetDuration(s.Duration)
-					}
-					if ListResultMap[s.TraceID].Timestamp == 0 {
-						ListResultMap[s.TraceID].SetTimestamp(s.Timestamp)
-					}
-				}
-				ListResultMap[s.TraceID].SpanPlus(s.ID) //span count++
+	result, err := tracelistDSL.Do(context.Background())
+	if err != nil {
+		logrus.WithFields(logrus.Fields{
+			"err": err,
+		}).Info("Get trace ids detail elasticsearch result err")
+	}
 
-				// @todo 什么情况下为空，以及如何处理
-				if len(s.Annotations) == 0 || len(s.BinaryAnnotations) == 0 {
-					fmt.Println("Annotations,BinaryAnnotations is empty")
-					continue
-				}
+	scrollId := result.ScrollId
+	hits := result.Hits.Hits
 
-				//ServiceNameList
-				serverName := s.Annotations[0].Endpoint.ServiceName
-				if serverName != "" {
-					ListResultMap[s.TraceID].SetServiceName(serverName, s.RelatedAPI)
-					ListResultMap[s.TraceID].ServiceNamePlus(serverName)
-					ListResultMap[s.TraceID].ServiceNameDuration(serverName, s.Duration)
-					ListResultMap[s.TraceID].ServiceNameUri(serverName, s.BinaryAnnotations)
-				}
-				ListResultMap[s.TraceID].setComponentInfo(s.BinaryAnnotations)
-			}
+	for {
+		s := esClient.Scroll().ScrollId(scrollId).KeepAlive("1m")
+		res, err := s.Do(context.Background())
+		if err == io.EOF {
+			break
 		}
-		//计算占比
-		// for _, val := range ListResultMap {
-		// 	val.TraceRatio()
-		// }
+		if len(res.Hits.Hits) == 0 {
+			break
+		}
+		fmt.Println("total", len(res.Hits.Hits), res.ScrollId, len(hits))
+		for _, v := range res.Hits.Hits {
+			hits = append(hits, v)
+		}
+		scrollId = res.ScrollId
+	}
 
+	for _, hit := range hits {
+		s := Span{}
+		if err := json.Unmarshal(*hit.Source, &s); err != nil {
+			fmt.Println("tracelistDSL list json err: ", err)
+		} else {
+			if _, ok := ListResultMap[s.TraceID]; !ok {
+				ListResultMap[s.TraceID] = InitResult(s.TraceID, s.ID)
+			}
+			if s.ParentID == "" {
+				ListResultMap[s.TraceID].SetTimestamp(s.Timestamp)
+				ListResultMap[s.TraceID].SetDuration(s.Duration)
+				ListResultMap[s.TraceID].SetRoot(true)
+			} else {
+				if ListResultMap[s.TraceID].Root == false && s.Duration >= ListResultMap[s.TraceID].Duration {
+					ListResultMap[s.TraceID].SetDuration(s.Duration)
+				}
+				if ListResultMap[s.TraceID].Timestamp == 0 {
+					ListResultMap[s.TraceID].SetTimestamp(s.Timestamp)
+				}
+			}
+			ListResultMap[s.TraceID].SpanPlus(s.ID) //span count++
+
+			// @todo 什么情况下为空，以及如何处理
+			if len(s.Annotations) == 0 || len(s.BinaryAnnotations) == 0 {
+				fmt.Println("Annotations,BinaryAnnotations is empty")
+				continue
+			}
+
+			//ServiceNameList
+			serverName := s.Annotations[0].Endpoint.ServiceName
+			if serverName != "" {
+				ListResultMap[s.TraceID].SetServiceName(serverName, s.RelatedAPI)
+				ListResultMap[s.TraceID].ServiceNamePlus(serverName)
+				ListResultMap[s.TraceID].ServiceNameDuration(serverName, s.Duration)
+				ListResultMap[s.TraceID].ServiceNameUri(serverName, s.BinaryAnnotations)
+			}
+			ListResultMap[s.TraceID].setComponentInfo(s.BinaryAnnotations)
+		}
+	}
+
+	for _, val := range ListResultMap {
+		val.TraceRatio()
 	}
 
 	return ListResultMap, dsl
@@ -373,3 +392,19 @@ func parseErrorType(str string) ([]string, error) {
 	}
 	return errTypes, nil
 }
+
+// func esScrollQuery(esClient *elastic.Client, scrollId string, hits []*elastic.SearchHit) ([]*elastic.SearchHit, error) {
+// 	s := esClient.Scroll().ScrollId(scrollId).KeepAlive("1m")
+// 	result, err := s.Do(context.Background())
+// 	if err != nil {
+// 		return hits, err
+// 	}
+// 	if len(result.Hits.Hits) > 0 {
+// 		fmt.Println("total", len(result.Hits.Hits), result.ScrollId, len(hits))
+// 		for _, v := range result.Hits.Hits {
+// 			hits = append(hits, v)
+// 		}
+// 		esScrollQuery(esClient, result.ScrollId, hits)
+// 	}
+// 	return hits, err
+// }
