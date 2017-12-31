@@ -18,10 +18,10 @@ import (
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 	"github.com/sirupsen/logrus"
 
-	"chuanyun.io/esmeralda/collector"
-	"chuanyun.io/esmeralda/controller"
-	"chuanyun.io/esmeralda/setting"
-	"chuanyun.io/esmeralda/util"
+	"github.com/chuan-yun/esmeralda/collector"
+	"github.com/chuan-yun/esmeralda/controller"
+	"github.com/chuan-yun/esmeralda/setting"
+	"github.com/chuan-yun/esmeralda/util"
 	"golang.org/x/sync/errgroup"
 )
 

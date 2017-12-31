@@ -3,7 +3,7 @@ package trace
 import (
 	"time"
 
-	"chuanyun.io/esmeralda/util"
+	"github.com/chuan-yun/esmeralda/util"
 	elastic "gopkg.in/olivere/elastic.v5"
 )
 

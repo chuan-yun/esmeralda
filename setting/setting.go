@@ -5,7 +5,7 @@ import (
 
 	"github.com/sirupsen/logrus"
 
-	"chuanyun.io/esmeralda/util"
+	"github.com/chuan-yun/esmeralda/util"
 	"github.com/spf13/viper"
 )
 

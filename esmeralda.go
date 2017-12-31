@@ -11,7 +11,7 @@ import (
 
 	_ "net/http/pprof"
 
-	"chuanyun.io/esmeralda/server"
+	"github.com/chuan-yun/esmeralda/server"
 )
 
 var (

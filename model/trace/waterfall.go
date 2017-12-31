@@ -1,7 +1,7 @@
 package trace
 
 import (
-	"chuanyun.io/esmeralda/util"
+	"github.com/chuan-yun/esmeralda/util"
 	"fmt"
 	"sort"
 	"strings"

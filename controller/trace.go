@@ -1,8 +1,8 @@
 package controller
 
 import (
-	traceModel "chuanyun.io/esmeralda/model/trace"
-	"chuanyun.io/esmeralda/util"
+	traceModel "github.com/chuan-yun/esmeralda/model/trace"
+	"github.com/chuan-yun/esmeralda/util"
 	"github.com/julienschmidt/httprouter"
 	"net/http"
 	"strconv"

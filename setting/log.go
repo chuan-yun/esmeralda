@@ -5,7 +5,7 @@ import (
 	"os"
 	"path/filepath"
 
-	"chuanyun.io/esmeralda/util"
+	"github.com/chuan-yun/esmeralda/util"
 	"github.com/sirupsen/logrus"
 )
 

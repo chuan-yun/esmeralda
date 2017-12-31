@@ -7,8 +7,8 @@ import (
 	"net/http"
 	"time"
 
-	"chuanyun.io/esmeralda/setting"
-	"chuanyun.io/esmeralda/util"
+	"github.com/chuan-yun/esmeralda/setting"
+	"github.com/chuan-yun/esmeralda/util"
 	elastic "gopkg.in/olivere/elastic.v5"
 )
 

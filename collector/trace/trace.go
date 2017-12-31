@@ -4,7 +4,7 @@ import (
 	"encoding/json"
 	"errors"
 
-	"chuanyun.io/esmeralda/util"
+	"github.com/chuan-yun/esmeralda/util"
 )
 
 func ToSpans(data string) (*[]Span, error) {
